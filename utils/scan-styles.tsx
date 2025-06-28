@@ -1,5 +1,6 @@
 import { Dimensions, StyleSheet } from "react-native";
 const screenHeight = Dimensions.get("window").height;
+
 export const stylesScan = StyleSheet.create({
   container: {
     flex: 1,
@@ -120,7 +121,7 @@ export const stylesScan = StyleSheet.create({
   },
   capturedImage: {
     width: "100%",
-    height: screenHeight * 0.6,
+    height: screenHeight * 0.4,
     marginTop: 80,
   },
   imageControlsContainer: {
@@ -174,16 +175,26 @@ export const stylesScan = StyleSheet.create({
     shadowRadius: 4,
   },
   resultTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 15,
+    marginBottom: 20,
     textAlign: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+    paddingBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2196F3",
+    marginBottom: 10,
+    marginTop: 5,
   },
   resultRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 12,
     alignItems: "flex-start",
   },
   resultLabel: {
@@ -191,6 +202,7 @@ export const stylesScan = StyleSheet.create({
     fontWeight: "600",
     color: "#666",
     flex: 1,
+    marginRight: 10,
   },
   resultValue: {
     fontSize: 14,
@@ -198,22 +210,74 @@ export const stylesScan = StyleSheet.create({
     flex: 2,
     textAlign: "right",
   },
+  divider: {
+    height: 1,
+    backgroundColor: "#e0e0e0",
+    marginVertical: 15,
+  },
   descriptionContainer: {
     marginTop: 15,
+    marginBottom: 10,
   },
   descriptionText: {
     fontSize: 14,
     color: "#555",
-    lineHeight: 20,
+    lineHeight: 22,
     marginTop: 5,
+    textAlign: "justify",
   },
   recommendationsContainer: {
-    marginTop: 15,
+    marginTop: 10,
   },
   recommendationItem: {
     fontSize: 14,
-    color: "#555",
-    lineHeight: 20,
+    color: "#2E7D32",
+    lineHeight: 22,
+    marginTop: 5,
+    paddingLeft: 5,
+  },
+  symptomItem: {
+    fontSize: 14,
+    color: "#F57C00",
+    lineHeight: 22,
     marginTop: 3,
+    paddingLeft: 5,
+  },
+  treatmentItem: {
+    fontSize: 14,
+    color: "#1976D2",
+    lineHeight: 22,
+    marginTop: 3,
+    paddingLeft: 5,
+  },
+  preventionItem: {
+    fontSize: 14,
+    color: "#388E3C",
+    lineHeight: 22,
+    marginTop: 3,
+    paddingLeft: 5,
+  },
+  allPredictionsContainer: {
+    marginTop: 10,
+  },
+  alternativeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    marginTop: 5,
+  },
+  alternativeClass: {
+    fontSize: 13,
+    color: "#666",
+    flex: 1,
+  },
+  alternativeConfidence: {
+    fontSize: 13,
+    color: "#888",
+    fontWeight: "500",
   },
 });

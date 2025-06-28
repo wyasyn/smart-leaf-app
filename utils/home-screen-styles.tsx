@@ -292,4 +292,27 @@ export const stylesHome = StyleSheet.create({
     borderRadius: 4,
     marginLeft: 12,
   },
+  noHistoryContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 40,
+    paddingHorizontal: 20,
+    marginBottom: 100,
+  },
+  noHistoryImage: {
+    width: 200,
+    height: 200,
+    marginBottom: 20,
+  },
+  noHistoryTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  noHistorySubtitle: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "center",
+  },
 });
