@@ -122,15 +122,19 @@ export default function PlantScannerScreen({
 
     try {
       const formData = new FormData();
-      const responseImg = await fetch(uri);
-      const blob = await responseImg.blob();
-      formData.append("file", blob as any, "plant_leaf.jpg");
+      const uriParts = uri.split(".");
+      const fileExtension = uriParts[uriParts.length - 1] || "jpg";
+      formData.append("file", {
+        uri: uri,
+        type: `image/${fileExtension}`,
+        name: `leaf.${fileExtension}`,
+      } as any);
 
       const response = await fetch(`${API_URL}/predict`, {
         method: "POST",
         body: formData,
         headers: {
-          "Content-Type": "multipart/form-data",
+          Accept: "application/json",
         },
       });
 
