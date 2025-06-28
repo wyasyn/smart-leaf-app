@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Smart Leaf",
+    "name": "smart leaf",
     "slug": "smart-leaf-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -32,6 +32,12 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#F8FDF8"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you analyze it plant health."
         }
       ]
     ],

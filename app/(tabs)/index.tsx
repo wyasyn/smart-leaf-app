@@ -1,17 +1,61 @@
+import SmartLeafBanner from "@/components/SmartLeafBanner";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { stylesHome as styles } from "../../utils/home-screen-styles";
 
+// API Response Types (matching your FastAPI backend)
+interface DiseaseInfo {
+  disease_name?: string;
+  common_names: string[];
+  crop: string;
+  description: string;
+  symptoms: string[];
+  cause?: string;
+  treatment: string[];
+  image_urls: string[];
+  prevention: string[];
+  management_tips: string;
+  risk_level: string;
+  sprayer_intervals: string;
+  localized_tips: string;
+  type: string;
+  external_resources: { [key: string]: string }[];
+}
+
+interface PredictionResponse {
+  success: boolean;
+  predicted_class: string;
+  clean_class_name: string;
+  confidence: number;
+  confidence_level: "High" | "Medium" | "Low";
+  all_predictions: { [key: string]: number };
+  disease_info: DiseaseInfo;
+  recommendations: string[];
+  message: string;
+}
+
+// Recent Scan interface matching API prediction response
 interface RecentScan {
   id: string;
-  plantName: string;
-  disease: string;
-  date: string;
-  severity: "low" | "medium" | "high";
-  image: string;
+  predicted_class: string;
+  clean_class_name: string;
+  confidence: number;
+  confidence_level: "High" | "Medium" | "Low";
+  disease_info: DiseaseInfo;
+  scanned_image_uri: string; // Local URI of the scanned image
+  timestamp: string; // ISO date string
+  recommendations: string[];
+  created_at?: Date; // For local processing
 }
 
 interface CarouselItem {
@@ -33,31 +77,117 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   isOffline = false,
   recentScans = [],
 }) => {
-  // Mock data for demonstration
+  // Mock data for demonstration (matching API structure)
   const mockRecentScans: RecentScan[] = [
     {
       id: "1",
-      plantName: "Tomato",
-      disease: "Late Blight",
-      date: "2 hours ago",
-      severity: "high",
-      image: "https://example.com/tomato-blight.jpg",
+      predicted_class: "Tomato___Late_blight",
+      clean_class_name: "Tomato - Late Blight",
+      confidence: 0.89,
+      confidence_level: "High",
+      disease_info: {
+        disease_name: "Late Blight",
+        common_names: ["Late Blight", "Tomato Late Blight"],
+        crop: "Tomato",
+        description: "A serious fungal disease affecting tomato plants",
+        symptoms: [
+          "Dark spots on leaves",
+          "White fuzzy growth",
+          "Rapid spread",
+        ],
+        cause: "Phytophthora infestans",
+        treatment: [
+          "Apply fungicide",
+          "Remove affected parts",
+          "Improve air circulation",
+        ],
+        image_urls: [],
+        prevention: ["Avoid overhead watering", "Ensure good drainage"],
+        management_tips:
+          "Monitor weather conditions and apply preventive sprays",
+        risk_level: "High",
+        sprayer_intervals: "Every 7-10 days",
+        localized_tips: "Common during rainy seasons",
+        type: "Fungal",
+        external_resources: [],
+      },
+      scanned_image_uri:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpPs6INuAXCgcXzA7QpWKI3iX3bRsJjOOJ1g&s",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+      recommendations: [
+        "Apply fungicide immediately",
+        "Remove affected leaves",
+        "Monitor other plants",
+      ],
     },
     {
       id: "2",
-      plantName: "Rose",
-      disease: "Black Spot",
-      date: "1 day ago",
-      severity: "medium",
-      image: "https://example.com/rose-blackspot.jpg",
+      predicted_class: "Apple___Apple_scab",
+      clean_class_name: "Apple - Apple Scab",
+      confidence: 0.76,
+      confidence_level: "Medium",
+      disease_info: {
+        disease_name: "Apple Scab",
+        common_names: ["Apple Scab", "Black Spot"],
+        crop: "Apple",
+        description:
+          "A fungal disease causing dark spots on apple leaves and fruit",
+        symptoms: [
+          "Dark olive-green spots",
+          "Yellowing leaves",
+          "Fruit lesions",
+        ],
+        cause: "Venturia inaequalis",
+        treatment: ["Fungicide application", "Pruning for air circulation"],
+        image_urls: [],
+        prevention: ["Regular pruning", "Avoid wet conditions"],
+        management_tips: "Apply preventive fungicides in spring",
+        risk_level: "Medium",
+        sprayer_intervals: "Every 14 days",
+        localized_tips: "Most common in humid conditions",
+        type: "Fungal",
+        external_resources: [],
+      },
+      scanned_image_uri:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAu2mZ830SD2185RCt26uImF95C7pXFhwXMQ&s",
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+      recommendations: [
+        "Monitor closely",
+        "Consider fungicide treatment",
+        "Improve air circulation",
+      ],
     },
     {
       id: "3",
-      plantName: "Apple",
-      disease: "Apple Scab",
-      date: "3 days ago",
-      severity: "low",
-      image: "https://example.com/apple-scab.jpg",
+      predicted_class: "Tomato___healthy",
+      clean_class_name: "Tomato - Healthy",
+      confidence: 0.95,
+      confidence_level: "High",
+      disease_info: {
+        disease_name: undefined,
+        common_names: [],
+        crop: "Tomato",
+        description: "Plant appears healthy with no signs of disease",
+        symptoms: [],
+        cause: undefined,
+        treatment: [],
+        image_urls: [],
+        prevention: ["Continue current care routine", "Regular monitoring"],
+        management_tips: "Maintain preventive measures",
+        risk_level: "Low",
+        sprayer_intervals: "",
+        localized_tips: "Keep monitoring for any changes",
+        type: "Healthy",
+        external_resources: [],
+      },
+      scanned_image_uri:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTlH_pk3OejRS8KaHqhY6syHFykX6IT_tCZsQ&s",
+      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+      recommendations: [
+        "Plant appears healthy",
+        "Continue current care routine",
+        "Monitor regularly",
+      ],
     },
   ];
 
@@ -66,27 +196,33 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
       id: "1",
       title: "Tomato Diseases",
       description: "Learn about common tomato plant diseases",
-      image: "https://example.com/tomato-diseases.jpg",
+      image:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6g7fizzu3tlT8-10wm5r-PctBYLERg2iyGA&s",
       type: "plant",
     },
     {
       id: "2",
       title: "Rose Care Tips",
       description: "Keep your roses healthy and beautiful",
-      image: "https://example.com/rose-care.jpg",
+      image:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR8y3nRaWO_iJhCN71hsP3NTRUfLc1BH7O8bw&s",
       type: "plant",
     },
     {
       id: "3",
       title: "Fungal Infections",
       description: "Identify and treat fungal diseases",
-      image: "https://example.com/fungal-diseases.jpg",
+      image:
+        "https://www.lovethegarden.com/sites/default/files/styles/header_image_fallback/public/content/articles/UK_learn-grow-garden-advice-pests-disease-control-common-types-plant-fungus_header.jpg?itok=rpZjn9px",
       type: "disease",
     },
   ];
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
+  // Helper function to get severity color based on risk level and confidence
+  const getSeverityColor = (riskLevel: string, confidenceLevel: string) => {
+    if (confidenceLevel === "Low") return "#999"; // Gray for low confidence
+
+    switch (riskLevel.toLowerCase()) {
       case "high":
         return "#FF4444";
       case "medium":
@@ -98,21 +234,50 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
-  const renderCarouselItem = (item: CarouselItem, index: number) => (
-    <TouchableOpacity key={item.id} style={styles.carouselItem}>
+  // Helper function to format timestamp to relative time
+  const getRelativeTime = (timestamp: string): string => {
+    const now = new Date();
+    const scanTime = new Date(timestamp);
+    const diffInMinutes = Math.floor(
+      (now.getTime() - scanTime.getTime()) / (1000 * 60)
+    );
+
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24)
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7)
+      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+
+    return scanTime.toLocaleDateString();
+  };
+
+  // Helper function to get confidence badge color
+  const getConfidenceBadgeColor = (confidenceLevel: string) => {
+    switch (confidenceLevel) {
+      case "High":
+        return { backgroundColor: "#E8F5E8", color: "#2C5530" };
+      case "Medium":
+        return { backgroundColor: "#FFF3E0", color: "#E65100" };
+      case "Low":
+        return { backgroundColor: "#FCE4EC", color: "#C2185B" };
+      default:
+        return { backgroundColor: "#F5F5F5", color: "#666" };
+    }
+  };
+
+  const renderCarouselItem = ({ item }: { item: CarouselItem }) => (
+    <TouchableOpacity style={styles.carouselItem}>
       <View style={styles.carouselImageContainer}>
         <Image
           source={{ uri: item.image }}
           style={styles.carouselImage}
           defaultSource={require("../../assets/images/placeholder-image.png")}
         />
-        <View style={styles.carouselOverlay}>
-          <Ionicons
-            name={item.type === "plant" ? "leaf" : "bug"}
-            size={24}
-            color="#fff"
-          />
-        </View>
       </View>
       <View style={styles.carouselContent}>
         <Text style={styles.carouselTitle}>{item.title}</Text>
@@ -121,53 +286,86 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     </TouchableOpacity>
   );
 
-  const renderRecentScan = (scan: RecentScan) => (
-    <TouchableOpacity key={scan.id} style={styles.recentScanItem}>
-      <View style={styles.scanImageContainer}>
-        <Image
-          source={{ uri: scan.image }}
-          style={styles.scanImage}
-          defaultSource={require("../../assets/images/placeholder-image.png")}
+  const renderRecentScan = ({ item }: { item: RecentScan }) => {
+    const confidenceColors = getConfidenceBadgeColor(item.confidence_level);
+    const isHealthy = !item.disease_info.disease_name;
+
+    return (
+      <TouchableOpacity
+        style={styles.recentScanItem}
+        onPress={() => {
+          // Navigate to scan details with the full prediction data
+          router.push({
+            pathname: "/scan-details",
+            params: { scanId: item.id },
+          });
+        }}
+      >
+        <View style={styles.scanImageContainer}>
+          <Image
+            source={{ uri: item.scanned_image_uri }}
+            style={styles.scanImage}
+            defaultSource={require("../../assets/images/placeholder-image.png")}
+          />
+        </View>
+        <View style={styles.scanDetails}>
+          <View style={styles.scanHeader}>
+            <Text style={styles.scanPlantName}>{item.disease_info.crop}</Text>
+            <View
+              style={[
+                styles.confidenceBadge,
+                { backgroundColor: confidenceColors.backgroundColor },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.confidenceText,
+                  { color: confidenceColors.color },
+                ]}
+              >
+                {Math.round(item.confidence * 100)}%
+              </Text>
+            </View>
+          </View>
+          <Text
+            style={[
+              styles.scanDisease,
+              { color: isHealthy ? "#44AA44" : "#666" },
+            ]}
+          >
+            {isHealthy ? "Healthy Plant" : item.disease_info.disease_name}
+          </Text>
+          <Text style={styles.scanDate}>{getRelativeTime(item.timestamp)}</Text>
+        </View>
+        <View
+          style={[
+            styles.severityIndicator,
+            {
+              backgroundColor: getSeverityColor(
+                item.disease_info.risk_level,
+                item.confidence_level
+              ),
+            },
+          ]}
         />
-      </View>
-      <View style={styles.scanDetails}>
-        <Text style={styles.scanPlantName}>{scan.plantName}</Text>
-        <Text style={styles.scanDisease}>{scan.disease}</Text>
-        <Text style={styles.scanDate}>{scan.date}</Text>
-      </View>
-      <View
-        style={[
-          styles.severityIndicator,
-          { backgroundColor: getSeverityColor(scan.severity) },
-        ]}
-      />
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
+
+  const currentScans = recentScans.length > 0 ? recentScans : mockRecentScans;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.welcomeText}>Welcome back!</Text>
-            <Text style={styles.appTitle}>Smart Leaf</Text>
-          </View>
-          <View style={styles.headerIcons}>
-            {isOffline && (
-              <View style={styles.offlineIndicator}>
-                <Ionicons name="cloud-offline" size={20} color="#FF6B6B" />
-              </View>
-            )}
-            <TouchableOpacity
-              style={styles.settingsButton}
-              onPress={() => router.push("/settings")}
-            >
-              <Ionicons name="settings-outline" size={24} color="#2C5530" />
-            </TouchableOpacity>
-          </View>
+      <SmartLeafBanner />
+
+      {/* Offline Indicator */}
+      {isOffline && (
+        <View style={styles.offlineIndicator}>
+          <Text style={styles.offlineText}>
+            📱 Offline Mode - Some features may be limited
+          </Text>
         </View>
-      </View>
+      )}
 
       {/* Main Scan Button */}
       <TouchableOpacity
@@ -254,18 +452,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             <Text style={styles.seeAllText}>See All</Text>
           </TouchableOpacity>
         </View>
-        <ScrollView
+        <FlatList
+          style={{
+            marginLeft: 20,
+            marginRight: 20,
+            paddingBottom: 24,
+          }}
+          data={carouselData}
+          renderItem={renderCarouselItem}
+          keyExtractor={(item) => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.carousel}
           contentContainerStyle={styles.carouselContent}
-        >
-          {carouselData.map((item, index) => renderCarouselItem(item, index))}
-        </ScrollView>
+        />
       </View>
 
       {/* Recent Scans */}
-      {(recentScans.length > 0 || mockRecentScans.length > 0) && (
+      {currentScans.length > 0 && (
         <View style={styles.recentScansContainer}>
           <View style={styles.recentScansHeader}>
             <Text style={styles.sectionTitle}>Recent Scans</Text>
@@ -273,11 +476,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.recentScansList}>
-            {(recentScans.length > 0 ? recentScans : mockRecentScans)
-              .slice(0, 3)
-              .map(renderRecentScan)}
-          </View>
+          <FlatList
+            style={{
+              paddingBottom: 24,
+            }}
+            data={currentScans.slice(0, 3)}
+            renderItem={renderRecentScan}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={false}
+            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          />
         </View>
       )}
     </ScrollView>

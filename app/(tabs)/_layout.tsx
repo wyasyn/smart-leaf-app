@@ -1,22 +1,32 @@
 import { colors } from "@/utils/colors";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import Feather from "@expo/vector-icons/Feather";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import React from "react";
-import { View } from "react-native";
+import { Dimensions, StyleSheet, View } from "react-native";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const HORIZONTAL_MARGIN = SCREEN_WIDTH * 0.08;
 
 const TabIcon = ({
   color,
   focused,
-  icon,
+  iconSet,
+  iconName,
 }: {
   color: string;
   focused: boolean;
-  icon: string;
+  iconSet: "Feather" | "MaterialCommunityIcons";
+  iconName: string;
 }) => {
+  const IconComponent =
+    iconSet === "Feather" ? Feather : MaterialCommunityIcons;
+
   return (
     <View
       style={{
-        padding: 8, // tweak if needed
+        padding: 8,
         backgroundColor: focused ? colors.primary : "transparent",
         borderRadius: 25,
         justifyContent: "center",
@@ -25,7 +35,7 @@ const TabIcon = ({
         height: 50,
       }}
     >
-      <AntDesign name={icon as any} size={24} color={color} />
+      <IconComponent name={iconName as any} size={24} color={color} />
     </View>
   );
 };
@@ -36,23 +46,28 @@ const RootLayout = () => {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarActiveTintColor: colors.background,
+        tabBarActiveTintColor: colors.title,
         tabBarInactiveTintColor: colors.text,
+        tabBarBackground: () => (
+          <BlurView
+            tint="light"
+            intensity={50}
+            style={StyleSheet.absoluteFill}
+          />
+        ),
         tabBarStyle: {
-          borderRadius: 50,
           position: "absolute",
-          bottom: 32,
-          left: 32,
-          right: 32,
-          marginHorizontal: 40,
+          bottom: 24,
+          height: 70,
+          marginHorizontal: HORIZONTAL_MARGIN,
+          borderRadius: 50,
           backgroundColor: colors.bgTabbar,
           borderWidth: 1,
-          height: 70,
-
+          borderColor: colors.bgTabbar,
           overflow: "hidden",
         },
         tabBarItemStyle: {
-          height: 70, // Match tabBarStyle height
+          height: 70,
           justifyContent: "center",
           alignItems: "center",
           paddingTop: 14,
@@ -64,37 +79,54 @@ const RootLayout = () => {
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="home" color={color} focused={focused} />
+            <TabIcon
+              iconSet="Feather"
+              iconName="home"
+              color={color}
+              focused={focused}
+            />
           ),
         }}
       />
-
       <Tabs.Screen
         name="history"
         options={{
           title: "History",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="book" color={color} focused={focused} />
+            <TabIcon
+              iconSet="Feather"
+              iconName="clock"
+              color={color}
+              focused={focused}
+            />
           ),
         }}
       />
-
       <Tabs.Screen
         name="diseases"
         options={{
           title: "Diseases",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="infocirlceo" color={color} focused={focused} />
+            <TabIcon
+              iconSet="MaterialCommunityIcons"
+              iconName="virus-outline"
+              color={color}
+              focused={focused}
+            />
           ),
         }}
       />
-
       <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="setting" color={color} focused={focused} />
+            <TabIcon
+              iconSet="Feather"
+              iconName="settings"
+              color={color}
+              focused={focused}
+            />
           ),
         }}
       />

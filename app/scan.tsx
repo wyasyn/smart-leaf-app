@@ -1,164 +1,314 @@
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Feather from "@expo/vector-icons/Feather";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import {
-  CameraMode,
-  CameraType,
-  CameraView,
-  useCameraPermissions,
-} from "expo-camera";
+import { stylesScan as styles } from "@/utils/scan-styles";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { CameraType } from "expo-camera/build/Camera.types";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { useRef, useState } from "react";
-import { Button, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-export default function App() {
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { router } from "expo-router";
+
+type PlantScannerScreenProps = {
+  navigation: NativeStackNavigationProp<any>;
+};
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL!;
+if (!API_URL) {
+  throw new Error("API_URL is not defined. Please set EXPO_PUBLIC_API_URL.");
+}
+
+export default function PlantScannerScreen({
+  navigation,
+}: PlantScannerScreenProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
-  const [uri, setUri] = useState<string | null>(null);
-  const [mode, setMode] = useState<CameraMode>("picture");
   const [facing, setFacing] = useState<CameraType>("back");
-  const [recording, setRecording] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [results, setResults] = useState<any>(null);
+  const [uri, setUri] = useState<string | null>(null);
 
-  if (!permission) {
-    return null;
-  }
+  if (!permission) return null;
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: "center" }}>
-          We need your permission to use the camera
+      <View style={styles.permissionContainer}>
+        <MaterialIcons name="camera-alt" size={80} color="#4CAF50" />
+        <Text style={styles.permissionText}>
+          Camera access is required to scan plant leaves
         </Text>
-        <Button onPress={requestPermission} title="Grant permission" />
+        <Text style={styles.permissionSubText}>
+          We&#39;ll help you identify plant diseases
+        </Text>
+        <TouchableOpacity
+          style={styles.permissionButton}
+          onPress={requestPermission}
+        >
+          <Text style={styles.permissionButtonText}>
+            Grant Camera Permission
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  const takePicture = async () => {
-    const photo = await ref.current?.takePictureAsync();
-    setUri(photo?.uri ?? null);
+  const toggleFacing = () => {
+    setFacing((current) => (current === "back" ? "front" : "back"));
   };
 
-  const recordVideo = async () => {
-    if (recording) {
-      setRecording(false);
-      ref.current?.stopRecording();
+  const takePicture = async () => {
+    try {
+      const photo = await ref.current?.takePictureAsync({
+        quality: 0.8,
+        base64: false,
+      });
+      if (photo?.uri) setUri(photo.uri);
+    } catch {
+      Alert.alert("Error", "Failed to take picture. Please try again.");
+    }
+  };
+
+  const openGallery = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "We need access to your photos.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        setUri(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert("Error", "Failed to open gallery.");
+    }
+  };
+
+  const clearImage = () => {
+    setUri(null);
+    setResults(null);
+  };
+
+  const goBack = () => {
+    setUri(null);
+    router.push("/(tabs)");
+  };
+
+  const sendToAPI = async () => {
+    if (!uri) {
+      Alert.alert("No Image", "Please take a photo or select one first.");
       return;
     }
-    setRecording(true);
-    const video = await ref.current?.recordAsync();
-    console.log({ video });
+
+    setIsLoading(true);
+    setResults(null);
+
+    try {
+      const formData = new FormData();
+      const responseImg = await fetch(uri);
+      const blob = await responseImg.blob();
+      formData.append("file", blob as any, "plant_leaf.jpg");
+
+      const response = await fetch(`${API_URL}/predict`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setResults(data);
+        Alert.alert(
+          "Analysis Complete",
+          `Detected: ${data.clean_class_name}\nConfidence: ${(
+            data.confidence * 100
+          ).toFixed(1)}%`
+        );
+      } else {
+        throw new Error(data.detail || "Prediction failed");
+      }
+    } catch (error) {
+      console.error("API Error:", error);
+      setResults(null);
+      Alert.alert("Analysis Failed", "Could not analyze the image.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const toggleMode = () => {
-    setMode((prev) => (prev === "picture" ? "video" : "picture"));
-  };
+  const renderResults = () => {
+    if (!results) return null;
 
-  const toggleFacing = () => {
-    setFacing((prev) => (prev === "back" ? "front" : "back"));
-  };
-
-  const renderPicture = () => {
     return (
-      <View>
-        <Image
-          source={{ uri: uri ?? undefined }}
-          contentFit="contain"
-          style={{ width: 300, aspectRatio: 1 }}
-        />
-        <Button onPress={() => setUri(null)} title="Take another picture" />
-      </View>
+      <ScrollView style={styles.resultsContainer}>
+        <View style={styles.resultCard}>
+          <Text style={styles.resultTitle}>Analysis Results</Text>
+
+          <View style={styles.resultRow}>
+            <Text style={styles.resultLabel}>Detected:</Text>
+            <Text style={styles.resultValue}>{results.clean_class_name}</Text>
+          </View>
+
+          <View style={styles.resultRow}>
+            <Text style={styles.resultLabel}>Confidence:</Text>
+            <Text
+              style={[
+                styles.resultValue,
+                {
+                  color:
+                    results.confidence > 0.8
+                      ? "#4CAF50"
+                      : results.confidence > 0.6
+                      ? "#FF9800"
+                      : "#F44336",
+                },
+              ]}
+            >
+              {(results.confidence * 100).toFixed(1)}% (
+              {results.confidence_level})
+            </Text>
+          </View>
+
+          {results.disease_info?.disease_name && (
+            <>
+              <View style={styles.resultRow}>
+                <Text style={styles.resultLabel}>Disease:</Text>
+                <Text style={styles.resultValue}>
+                  {results.disease_info.disease_name}
+                </Text>
+              </View>
+              <View style={styles.resultRow}>
+                <Text style={styles.resultLabel}>Crop:</Text>
+                <Text style={styles.resultValue}>
+                  {results.disease_info.crop}
+                </Text>
+              </View>
+              {results.disease_info.description && (
+                <View style={styles.descriptionContainer}>
+                  <Text style={styles.resultLabel}>Description:</Text>
+                  <Text style={styles.descriptionText}>
+                    {results.disease_info.description}
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+
+          {results.recommendations && results.recommendations.length > 0 && (
+            <View style={styles.recommendationsContainer}>
+              <Text style={styles.resultLabel}>Recommendations:</Text>
+              {results.recommendations.map((rec: string, index: number) => (
+                <Text key={index} style={styles.recommendationItem}>
+                  • {rec}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
     );
   };
 
-  const renderCamera = () => {
-    return (
+  const renderImageView = () => (
+    <View style={styles.imageContainer}>
+      <TouchableOpacity style={styles.backButton} onPress={goBack}>
+        <Ionicons name="arrow-back" size={24} color="white" />
+      </TouchableOpacity>
+
+      <Image
+        source={{ uri: uri! }}
+        contentFit="cover"
+        style={styles.capturedImage}
+      />
+
+      <View style={styles.imageControlsContainer}>
+        <TouchableOpacity style={styles.controlButton} onPress={clearImage}>
+          <MaterialIcons name="clear" size={24} color="white" />
+          <Text style={styles.controlButtonText}>Clear</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
+          onPress={sendToAPI}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <MaterialIcons name="send" size={24} color="white" />
+          )}
+          <Text style={styles.sendButtonText}>
+            {isLoading ? "Analyzing..." : "Analyze"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.controlButton}
+          onPress={() => setUri(null)}
+        >
+          <MaterialIcons name="camera-alt" size={24} color="white" />
+          <Text style={styles.controlButtonText}>Retake</Text>
+        </TouchableOpacity>
+      </View>
+
+      {renderResults()}
+    </View>
+  );
+
+  const renderCamera = () => (
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.backButtonCamera} onPress={goBack}>
+        <Ionicons name="arrow-back" size={24} color="white" />
+      </TouchableOpacity>
+
       <CameraView
         style={styles.camera}
         ref={ref}
-        mode={mode}
         facing={facing}
-        mute={false}
-        responsiveOrientationWhenOrientationLocked
+        mode="picture"
       >
-        <View style={styles.shutterContainer}>
-          <Pressable onPress={toggleMode}>
-            {mode === "picture" ? (
-              <AntDesign name="picture" size={32} color="white" />
-            ) : (
-              <Feather name="video" size={32} color="white" />
-            )}
-          </Pressable>
-          <Pressable onPress={mode === "picture" ? takePicture : recordVideo}>
-            {({ pressed }) => (
-              <View
-                style={[
-                  styles.shutterBtn,
-                  {
-                    opacity: pressed ? 0.5 : 1,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.shutterBtnInner,
-                    {
-                      backgroundColor: mode === "picture" ? "white" : "red",
-                    },
-                  ]}
-                />
-              </View>
-            )}
-          </Pressable>
-          <Pressable onPress={toggleFacing}>
-            <FontAwesome6 name="rotate-left" size={32} color="white" />
-          </Pressable>
+        <View style={styles.cameraOverlay}>
+          <Text style={styles.instructionText}>
+            Position the plant leaf within the frame
+          </Text>
+        </View>
+
+        <View style={styles.cameraControls}>
+          <TouchableOpacity style={styles.cameraButton} onPress={openGallery}>
+            <MaterialIcons name="photo-library" size={28} color="white" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.shutterButton} onPress={takePicture}>
+            <View style={styles.shutterButtonInner} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.cameraButton} onPress={toggleFacing}>
+            <MaterialIcons name="flip-camera-ios" size={28} color="white" />
+          </TouchableOpacity>
         </View>
       </CameraView>
-    );
-  };
-
-  return (
-    <View style={styles.container}>
-      {uri ? renderPicture() : renderCamera()}
     </View>
   );
-}
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  camera: {
-    flex: 1,
-    width: "100%",
-  },
-  shutterContainer: {
-    position: "absolute",
-    bottom: 44,
-    left: 0,
-    width: "100%",
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 30,
-  },
-  shutterBtn: {
-    backgroundColor: "transparent",
-    borderWidth: 5,
-    borderColor: "white",
-    width: 85,
-    height: 85,
-    borderRadius: 45,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  shutterBtnInner: {
-    width: 70,
-    height: 70,
-    borderRadius: 50,
-  },
-});
+  return uri ? renderImageView() : renderCamera();
+}

@@ -6,7 +6,6 @@ export const stylesHome = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FDF8",
-    paddingTop: 20,
   },
 
   // Header Styles
@@ -36,11 +35,24 @@ export const stylesHome = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+
+  // Offline Indicator Styles
   offlineIndicator: {
     backgroundColor: "#FFE8E8",
-    padding: 8,
-    borderRadius: 20,
+    padding: 12,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#FF4444",
   },
+  offlineText: {
+    fontSize: 14,
+    color: "#C62828",
+    textAlign: "center",
+    fontWeight: "500",
+  },
+
   settingsButton: {
     backgroundColor: "#E8F5E8",
     padding: 12,
@@ -100,7 +112,8 @@ export const stylesHome = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     flexWrap: "wrap",
-    gap: 12,
+    rowGap: 16,
+    columnGap: 16,
   },
   quickActionButton: {
     width: (width - 64) / 2,
@@ -198,7 +211,7 @@ export const stylesHome = StyleSheet.create({
     paddingBottom: 10,
   },
 
-  // Recent Scans Styles
+  // Recent Scans Styles (Updated)
   recentScansContainer: {
     marginHorizontal: 20,
     marginBottom: 150,
@@ -225,9 +238,9 @@ export const stylesHome = StyleSheet.create({
     shadowRadius: 3,
   },
   scanImageContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 12,
     backgroundColor: "#E8F5E8",
     justifyContent: "center",
     alignItems: "center",
@@ -241,16 +254,33 @@ export const stylesHome = StyleSheet.create({
   scanDetails: {
     flex: 1,
   },
+  scanHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   scanPlantName: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#2C5530",
-    marginBottom: 2,
+    flex: 1,
+  },
+  confidenceBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  confidenceText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   scanDisease: {
     fontSize: 14,
     color: "#666",
-    marginBottom: 2,
+    marginBottom: 4,
+    fontWeight: "500",
   },
   scanDate: {
     fontSize: 12,
