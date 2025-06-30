@@ -12,6 +12,12 @@ if (!API_URL) {
 }
 
 // Types based on your API
+
+export interface PredictionItem {
+  confidence: number;
+  label: string;
+  confidence_level: string;
+}
 export interface DiseaseInfo {
   disease_name?: string;
   common_names: string[];
@@ -38,7 +44,7 @@ export interface PredictionResponse {
   clean_class_name: string;
   confidence: number;
   confidence_level: string;
-  all_predictions: Record<string, number>;
+  all_predictions: PredictionItem[];
   disease_info: DiseaseInfo;
   recommendations: string[];
   message: string;
