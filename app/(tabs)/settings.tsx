@@ -14,6 +14,11 @@ import {
 } from "../../hooks/usePlantDiseaseAPI";
 import { usePlantDiseaseStore } from "../../store/plantDiseaseStore";
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL!;
+if (!API_URL) {
+  throw new Error("API_URL is not defined. Please set EXPO_PUBLIC_API_URL.");
+}
+
 export default function SettingsScreen() {
   useNetworkMonitor();
   useAutoHealthCheck(5); // Check health every 5 minutes
@@ -28,25 +33,12 @@ export default function SettingsScreen() {
     healthStatus,
     clearCache,
     clearPredictionHistory,
-    getCachedPredictions,
     checkHealth,
     isCheckingHealth,
-  } = usePlantDiseaseStore((state) => ({
-    baseUrl: state.baseUrl,
-    setBaseUrl: state.setBaseUrl,
-    cacheExpiryMinutes: state.cacheExpiryMinutes,
-    maxCacheSize: state.maxCacheSize,
-    isOnline: state.isOnline,
-    healthStatus: state.healthStatus,
-    clearCache: state.clearCache,
-    clearPredictionHistory: state.clearPredictionHistory,
-    getCachedPredictions: state.getCachedPredictions,
-    checkHealth: state.checkHealth,
-    isCheckingHealth: state.isCheckingHealth,
-  }));
+    predictionHistory,
+  } = usePlantDiseaseStore();
 
   const [tempBaseUrl, setTempBaseUrl] = useState(baseUrl);
-  const cachedPredictions = getCachedPredictions();
 
   const handleUpdateBaseUrl = () => {
     if (tempBaseUrl.trim()) {
@@ -114,7 +106,7 @@ export default function SettingsScreen() {
           }}
           value={tempBaseUrl}
           onChangeText={setTempBaseUrl}
-          placeholder="http://your-api-url.com"
+          placeholder={API_URL}
         />
 
         <TouchableOpacity
@@ -206,7 +198,7 @@ export default function SettingsScreen() {
           <Text style={{ marginBottom: 8 }}>
             Max Cache Size: {maxCacheSize} items
           </Text>
-          <Text>Cached Predictions: {cachedPredictions.length}</Text>
+          <Text>Cached Predictions: {predictionHistory.length}</Text>
         </View>
 
         <View style={{ flexDirection: "row", gap: 8 }}>
@@ -253,7 +245,7 @@ export default function SettingsScreen() {
       </View>
 
       {/* App Information */}
-      <View style={{ marginBottom: 24 }}>
+      <View style={{ marginBottom: 120 }}>
         <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}>
           About
         </Text>

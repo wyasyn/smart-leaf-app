@@ -1,5 +1,5 @@
 import NetInfo from "@react-native-community/netinfo";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   useNetworkStatus,
   usePlantDiseaseStore,
@@ -20,38 +20,34 @@ export const useNetworkMonitor = () => {
 
 // Auto health check hook
 export const useAutoHealthCheck = (intervalMinutes = 5) => {
-  const checkHealth = usePlantDiseaseStore((state) => state.checkHealth);
+  const checkHealthRef = useRef(usePlantDiseaseStore.getState().checkHealth);
 
   useEffect(() => {
-    // Initial check
-    checkHealth();
+    checkHealthRef.current(); // initial call
 
-    // Set up interval
     const interval = setInterval(() => {
-      checkHealth();
+      checkHealthRef.current();
     }, intervalMinutes * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [checkHealth, intervalMinutes]);
+  }, [intervalMinutes]);
 };
 
 // Cache cleanup hook
 export const useCacheCleanup = () => {
-  const { clearCache, cacheExpiryMinutes } = usePlantDiseaseStore((state) => ({
-    clearCache: state.clearCache,
-    cacheExpiryMinutes: state.cacheExpiryMinutes,
-  }));
+  const { clearCache, cacheExpiryMinutes } = usePlantDiseaseStore.getState();
 
   useEffect(() => {
-    // Clean up expired cache on app start
     const cleanup = () => {
-      // This could be enhanced to only clear expired items
-      clearCache();
+      clearCache(); // consider enhancing to remove only expired cache
     };
+
+    // run immediately
+    cleanup();
 
     // Run cleanup every hour
     const interval = setInterval(cleanup, 60 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [clearCache, cacheExpiryMinutes]);
+  }, [cacheExpiryMinutes]); // it's safe to watch static values like numbers
 };

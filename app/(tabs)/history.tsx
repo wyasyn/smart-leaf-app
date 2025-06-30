@@ -1,12 +1,13 @@
 import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  FlatList,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -25,6 +26,10 @@ const HistoryScreen = () => {
     clearPredictionHistory,
     isLoading,
   } = usePlantDiseaseStore();
+
+  useEffect(() => {
+    getCachedPredictions();
+  }, []);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -223,71 +228,77 @@ const HistoryScreen = () => {
         )}
       </View>
 
-      {predictionHistory.length > 0 && (
-        <>
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{predictionHistory.length}</Text>
-              <Text style={styles.statLabel}>Total Scans</Text>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {predictionHistory.length > 0 ? (
+          <>
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>
+                  {predictionHistory.length}
+                </Text>
+                <Text style={styles.statLabel}>Total Scans</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{scansToday}</Text>
+                <Text style={styles.statLabel}>Today</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>
+                  {
+                    predictionHistory.filter(
+                      (p: CachedPrediction) => p.disease_info.is_healthy
+                    ).length
+                  }
+                </Text>
+                <Text style={styles.statLabel}>Healthy</Text>
+              </View>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{scansToday}</Text>
-              <Text style={styles.statLabel}>Today</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>
-                {
-                  predictionHistory.filter(
-                    (p: CachedPrediction) => p.disease_info.is_healthy
-                  ).length
-                }
-              </Text>
-              <Text style={styles.statLabel}>Healthy</Text>
-            </View>
-          </View>
 
-          <View style={styles.chartContainer}>
-            <Text style={styles.chartTitle}>Weekly Activity</Text>
-            <BarChart
-              data={chartData}
-              width={Dimensions.get("window").width - 40}
-              height={180}
-              chartConfig={{
-                backgroundGradientFrom: "#fff",
-                backgroundGradientTo: "#fff",
-                color: (opacity = 1) => `rgba(229, 0, 70, ${opacity})`,
-                labelColor: () => "#6B7280",
-                barPercentage: 0.7,
-                decimalPlaces: 0,
-              }}
-              style={styles.chart}
-              yAxisLabel=""
-              yAxisSuffix=""
-              showValuesOnTopOfBars
-            />
-          </View>
-        </>
-      )}
+            <View style={styles.chartContainer}>
+              <Text style={styles.chartTitle}>Weekly Activity</Text>
+              <BarChart
+                data={chartData}
+                width={Dimensions.get("window").width - 40}
+                height={180}
+                chartConfig={{
+                  backgroundGradientFrom: "#fff",
+                  backgroundGradientTo: "#fff",
+                  color: (opacity = 1) => `rgba(229, 0, 70, ${opacity})`,
+                  labelColor: () => "#6B7280",
+                  barPercentage: 0.7,
+                  decimalPlaces: 0,
+                }}
+                style={styles.chart}
+                yAxisLabel=""
+                yAxisSuffix=""
+                showValuesOnTopOfBars
+              />
+            </View>
 
-      {predictionHistory.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <MaterialIcons name="history" size={64} color="#D1D5DB" />
-          <Text style={styles.emptyTitle}>No Predictions Yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Start scanning plants to build your prediction history
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={predictionHistory}
-          keyExtractor={(item) => item.timestamp.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContainer}
-          onRefresh={handleRefresh}
-          refreshing={refreshing}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+            <View style={styles.listContainer}>
+              {predictionHistory.map((item) => (
+                <View key={item.timestamp.toString()}>
+                  {renderItem({ item })}
+                </View>
+              ))}
+            </View>
+          </>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <MaterialIcons name="history" size={64} color="#D1D5DB" />
+            <Text style={styles.emptyTitle}>No Predictions Yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Start scanning plants to build your prediction history
+            </Text>
+          </View>
+        )}
+      </ScrollView>
 
       <TouchableOpacity onPress={() => router.push("/scan")} style={styles.fab}>
         <AntDesign name="camerao" size={24} color="#fff" />
@@ -459,7 +470,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    bottom: 30,
+    bottom: 150,
     right: 20,
     backgroundColor: "#E50046",
     width: 56,

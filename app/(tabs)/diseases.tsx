@@ -1,5 +1,4 @@
-import { getRiskLevelColor } from "@/utils/lib";
-import { router } from "expo-router";
+import renderBrowselItem from "@/components/broswe-item";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -29,7 +28,6 @@ export default function BrowseScreen() {
   } = usePlantDiseaseStore();
 
   useEffect(() => {
-    // Load initial data
     getAllDiseases();
     getApiStats();
   }, []);
@@ -45,18 +43,14 @@ export default function BrowseScreen() {
     await getAllDiseases({ crop });
   };
 
-  const navigateToDisease = (disease: any) => {
-    router.push(`/disease/${disease.class_id}`);
-  };
-
   const displayDiseases = searchResults?.results.length
     ? searchResults.results
     : searchResults?.suggestions.length
     ? searchResults.suggestions
     : allDiseases;
 
-  return (
-    <View style={{ flex: 1, padding: 16 }}>
+  const ListHeader = () => (
+    <View style={{ padding: 16 }}>
       <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>
         Browse Diseases
       </Text>
@@ -133,7 +127,7 @@ export default function BrowseScreen() {
         </View>
       )}
 
-      {/* Stats Display */}
+      {/* Stats */}
       {apiStats && (
         <View
           style={{
@@ -155,7 +149,7 @@ export default function BrowseScreen() {
         </View>
       )}
 
-      {/* Error Messages */}
+      {/* Error */}
       {(searchError || error) && (
         <View
           style={{
@@ -169,7 +163,7 @@ export default function BrowseScreen() {
         </View>
       )}
 
-      {/* Loading Indicator */}
+      {/* Loading */}
       {(isLoading || isSearching) && (
         <View style={{ padding: 20, alignItems: "center" }}>
           <ActivityIndicator size="large" color="#007AFF" />
@@ -178,74 +172,30 @@ export default function BrowseScreen() {
           </Text>
         </View>
       )}
-
-      {/* Results */}
-      <FlatList
-        data={displayDiseases}
-        keyExtractor={(item) => item.class_id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => navigateToDisease(item)}
-            style={{
-              backgroundColor: "white",
-              padding: 16,
-              marginBottom: 8,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: "#e0e0e0",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.1,
-              shadowRadius: 2,
-              elevation: 2,
-            }}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 4 }}>
-              {item.disease_info.disease_name || item.class_name}
-            </Text>
-
-            <Text style={{ color: "#666", marginBottom: 4 }}>
-              Crop: {item.disease_info.crop}
-            </Text>
-
-            <Text style={{ color: "#666", marginBottom: 8 }} numberOfLines={2}>
-              {item.disease_info.description}
-            </Text>
-
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  backgroundColor: getRiskLevelColor(
-                    item.disease_info.risk_level
-                  ),
-                  color: "white",
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                }}
-              >
-                {item.disease_info.risk_level}
-              </Text>
-
-              <Text style={{ fontSize: 12, color: "#999" }}>
-                {item.disease_info.type}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={() => (
-          <View style={{ padding: 20, alignItems: "center" }}>
-            <Text style={{ color: "#666", textAlign: "center" }}>
-              {searchQuery
-                ? "No diseases found for your search"
-                : "No diseases available"}
-            </Text>
-          </View>
-        )}
-      />
     </View>
+  );
+
+  return (
+    <FlatList
+      data={displayDiseases}
+      keyExtractor={(item) => item.class_id}
+      renderItem={renderBrowselItem}
+      numColumns={2}
+      showsVerticalScrollIndicator={false}
+      ListHeaderComponent={ListHeader}
+      contentContainerStyle={{ padding: 8, paddingBottom: 100 }}
+      columnWrapperStyle={{
+        justifyContent: "space-between",
+      }}
+      ListEmptyComponent={() => (
+        <View style={{ padding: 20, alignItems: "center" }}>
+          <Text style={{ color: "#666", textAlign: "center" }}>
+            {searchQuery
+              ? "No diseases found for your search"
+              : "No diseases available"}
+          </Text>
+        </View>
+      )}
+    />
   );
 }
