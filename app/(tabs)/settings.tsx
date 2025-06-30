@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import {
   useAutoHealthCheck,
-  useCacheCleanup,
   useNetworkMonitor,
 } from "../../hooks/usePlantDiseaseAPI";
 import { usePlantDiseaseStore } from "../../store/plantDiseaseStore";
@@ -22,7 +21,6 @@ if (!API_URL) {
 export default function SettingsScreen() {
   useNetworkMonitor();
   useAutoHealthCheck(5); // Check health every 5 minutes
-  useCacheCleanup();
 
   const {
     baseUrl,
