@@ -86,7 +86,7 @@ export interface APIStats {
 }
 
 // Cache interfaces
-interface CachedPrediction extends PredictionResponse {
+export interface CachedPrediction extends PredictionResponse {
   timestamp: number;
   imageUri: string;
 }

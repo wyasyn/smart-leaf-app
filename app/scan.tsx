@@ -15,19 +15,22 @@ import {
   View,
 } from "react-native";
 
-import { usePlantDiseaseStore } from "@/store/plantDiseaseStore";
+import {
+  PredictionResponse,
+  usePlantDiseaseStore,
+} from "@/store/plantDiseaseStore";
 import { router } from "expo-router";
 
 export default function PlantScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const ref = useRef<CameraView>(null);
   const [facing, setFacing] = useState<CameraType>("back");
+  const [result, setResult] = useState<PredictionResponse | null>(null);
 
   const [uri, setUri] = useState<string | null>(null);
 
   const {
     predictDisease,
-    lastPrediction,
     isPredicting,
     predictionError,
     clearAllErrors,
@@ -118,51 +121,106 @@ export default function PlantScannerScreen() {
 
     const result = await predictDisease(uri);
     if (result) {
-      Alert.alert("Prediction Complete", result.message);
+      setResult(result);
     }
   };
 
   const renderImageView = () => (
     <ScrollView style={styles.imageContainer}>
-      <TouchableOpacity style={styles.backButton} onPress={goBack}>
-        <Ionicons name="arrow-back" size={24} color="white" />
-      </TouchableOpacity>
+      <>
+        {!result ? (
+          <>
+            <TouchableOpacity style={styles.backButton} onPress={goBack}>
+              <Ionicons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
 
-      <Image
-        source={{ uri: uri! }}
-        contentFit="cover"
-        style={styles.capturedImage}
-      />
+            <Image
+              source={{ uri: uri! }}
+              contentFit="cover"
+              style={styles.capturedImage}
+            />
 
-      <View style={styles.imageControlsContainer}>
-        <TouchableOpacity style={styles.controlButton} onPress={clearImage}>
-          <MaterialIcons name="clear" size={24} color="white" />
-          <Text style={styles.controlButtonText}>Clear</Text>
-        </TouchableOpacity>
+            <View style={styles.imageControlsContainer}>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={clearImage}
+              >
+                <MaterialIcons name="clear" size={24} color="white" />
+                <Text style={styles.controlButtonText}>Clear</Text>
+              </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.sendButton, isPredicting && styles.sendButtonDisabled]}
-          onPress={handlePredict}
-          disabled={isPredicting}
-        >
-          {isPredicting ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <MaterialIcons name="send" size={24} color="white" />
-          )}
-          <Text style={styles.sendButtonText}>
-            {isPredicting ? "Analyzing..." : "Analyze"}
-          </Text>
-        </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  isPredicting && styles.sendButtonDisabled,
+                ]}
+                onPress={handlePredict}
+                disabled={isPredicting}
+              >
+                {isPredicting ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <MaterialIcons name="send" size={24} color="white" />
+                )}
+                <Text style={styles.sendButtonText}>
+                  {isPredicting ? "Analyzing..." : "Analyze"}
+                </Text>
+              </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={() => setUri(null)}
-        >
-          <MaterialIcons name="camera-alt" size={24} color="white" />
-          <Text style={styles.controlButtonText}>Retake</Text>
-        </TouchableOpacity>
-      </View>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={() => setUri(null)}
+              >
+                <MaterialIcons name="camera-alt" size={24} color="white" />
+                <Text style={styles.controlButtonText}>Retake</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            <Image
+              source={{ uri: uri! }}
+              contentFit="cover"
+              style={{
+                width: "100%",
+                height: 300,
+              }}
+            />
+            <View
+              style={{
+                backgroundColor: "#f0f0f0",
+                padding: 16,
+                paddingBottom: 24,
+                borderRadius: 12,
+                marginBottom: 16,
+                marginTop: -16,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+                {result.clean_class_name}
+              </Text>
+              <Text style={{ marginTop: 8 }}>
+                Confidence: {(result.confidence * 100).toFixed(1)}% (
+                {result.confidence_level})
+              </Text>
+              <Text style={{ marginTop: 8 }}>
+                {result.disease_info.description}
+              </Text>
+
+              {result.recommendations.length > 0 && (
+                <View style={{ marginTop: 12 }}>
+                  <Text style={{ fontWeight: "bold" }}>Recommendations:</Text>
+                  {result.recommendations.map((rec, index) => (
+                    <Text key={index} style={{ marginTop: 4, paddingBlock: 8 }}>
+                      {rec}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          </>
+        )}
+      </>
 
       {/* Error Display */}
       {predictionError && (
@@ -175,40 +233,6 @@ export default function PlantScannerScreen() {
           }}
         >
           <Text style={{ color: "white" }}>{predictionError}</Text>
-        </View>
-      )}
-
-      {/* Prediction Results */}
-      {lastPrediction && (
-        <View
-          style={{
-            backgroundColor: "#f0f0f0",
-            padding: 16,
-            borderRadius: 8,
-            marginBottom: 16,
-          }}
-        >
-          <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-            {lastPrediction.clean_class_name}
-          </Text>
-          <Text style={{ marginTop: 8 }}>
-            Confidence: {(lastPrediction.confidence * 100).toFixed(1)}% (
-            {lastPrediction.confidence_level})
-          </Text>
-          <Text style={{ marginTop: 8 }}>
-            {lastPrediction.disease_info.description}
-          </Text>
-
-          {lastPrediction.recommendations.length > 0 && (
-            <View style={{ marginTop: 12 }}>
-              <Text style={{ fontWeight: "bold" }}>Recommendations:</Text>
-              {lastPrediction.recommendations.slice(0, 3).map((rec, index) => (
-                <Text key={index} style={{ marginTop: 4 }}>
-                  • {rec}
-                </Text>
-              ))}
-            </View>
-          )}
         </View>
       )}
     </ScrollView>

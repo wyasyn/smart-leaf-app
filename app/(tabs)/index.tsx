@@ -1,64 +1,15 @@
+import HomeDiseases from "@/components/home-diseases";
 import HomeHistory from "@/components/home-history";
 import SmartLeafBanner from "@/components/SmartLeafBanner";
-import { CarouselItem, HomeScreenProps } from "@/utils/lib";
+import { HomeScreenProps } from "@/utils/lib";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React from "react";
-import {
-  FlatList,
-  Image,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { stylesHome as styles } from "../../utils/home-screen-styles";
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ isOffline = false }) => {
-  const carouselData: CarouselItem[] = [
-    {
-      id: "1",
-      title: "Tomato Diseases",
-      description: "Learn about common tomato plant diseases",
-      image:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6g7fizzu3tlT8-10wm5r-PctBYLERg2iyGA&s",
-      type: "plant",
-    },
-    {
-      id: "2",
-      title: "Rose Care Tips",
-      description: "Keep your roses healthy and beautiful",
-      image:
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR8y3nRaWO_iJhCN71hsP3NTRUfLc1BH7O8bw&s",
-      type: "plant",
-    },
-    {
-      id: "3",
-      title: "Fungal Infections",
-      description: "Identify and treat fungal diseases",
-      image:
-        "https://www.lovethegarden.com/sites/default/files/styles/header_image_fallback/public/content/articles/UK_learn-grow-garden-advice-pests-disease-control-common-types-plant-fungus_header.jpg?itok=rpZjn9px",
-      type: "disease",
-    },
-  ];
-
-  const renderCarouselItem = ({ item }: { item: CarouselItem }) => (
-    <TouchableOpacity style={styles.carouselItem}>
-      <View style={styles.carouselImageContainer}>
-        <Image
-          source={{ uri: item.image }}
-          style={styles.carouselImage}
-          defaultSource={require("../../assets/images/placeholder-image.png")}
-        />
-      </View>
-      <View style={styles.carouselContent}>
-        <Text style={styles.carouselTitle}>{item.title}</Text>
-        <Text style={styles.carouselDescription}>{item.description}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <SmartLeafBanner />
@@ -150,27 +101,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ isOffline = false }) => {
       </View>
 
       {/* Plant & Disease Carousel */}
-      <View style={styles.carouselContainer}>
-        <View style={styles.carouselHeader}>
-          <Text style={styles.sectionTitle}>Explore</Text>
-          <TouchableOpacity onPress={() => router.push("/diseases")}>
-            <Text style={styles.seeAllText}>See All</Text>
-          </TouchableOpacity>
-        </View>
-        <FlatList
-          style={{
-            marginLeft: 20,
-            marginRight: 20,
-            paddingBottom: 24,
-          }}
-          data={carouselData}
-          renderItem={renderCarouselItem}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.carouselContent}
-        />
-      </View>
+      <HomeDiseases />
 
       <HomeHistory />
     </ScrollView>

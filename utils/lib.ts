@@ -72,7 +72,7 @@ export const getConfidenceBadgeColor = (confidenceLevel: string) => {
 };
 
 // Helper function to format timestamp to relative time
-export const getRelativeTime = (timestamp: string): string => {
+export const getRelativeTime = (timestamp: number): string => {
   const now = new Date();
   const scanTime = new Date(timestamp);
   const diffInMinutes = Math.floor(

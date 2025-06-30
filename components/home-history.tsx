@@ -1,35 +1,17 @@
-import { ScanHistoryItem, ScanHistoryManager } from "@/utils/scan-history";
+import { usePlantDiseaseStore } from "@/store/plantDiseaseStore";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React from "react";
+import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { stylesHome as styles } from "../utils/home-screen-styles";
 import renderRecentScan from "./resent-scan-item";
 
 function HomeHistory() {
-  const [currentScans, setCurrentScans] = useState<ScanHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchHistory = async () => {
-      const history = await ScanHistoryManager.getHistory();
-      setCurrentScans(history);
-      setLoading(false);
-    };
-    fetchHistory();
-  }, []);
+  const { predictionHistory } = usePlantDiseaseStore();
 
   return (
     <>
-      {loading ? (
-        <ActivityIndicator size="large" color="#E50046" />
-      ) : currentScans.length > 0 ? (
+      {predictionHistory.length > 0 ? (
         <View style={styles.recentScansContainer}>
           <View style={styles.recentScansHeader}>
             <Text style={styles.sectionTitle}>Recent Scans</Text>
@@ -39,9 +21,9 @@ function HomeHistory() {
           </View>
           <FlatList
             style={{ paddingBottom: 24 }}
-            data={currentScans.slice(0, 3)}
+            data={predictionHistory.slice(0, 3)}
             renderItem={renderRecentScan}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.timestamp.toString()}
             scrollEnabled={false}
             ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           />
