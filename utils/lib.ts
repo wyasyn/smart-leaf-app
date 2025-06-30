@@ -111,3 +111,17 @@ export const getSeverityColor = (
       return "#666";
   }
 };
+
+// Helper function for risk level colors
+export const getRiskLevelColor = (riskLevel: string) => {
+  switch (riskLevel.toLowerCase()) {
+    case "high":
+      return "#ff4444";
+    case "medium":
+      return "#ffaa00";
+    case "low":
+      return "#44ff44";
+    default:
+      return "#666";
+  }
+};

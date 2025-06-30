@@ -21,7 +21,10 @@ const renderRecentScan = ({ item }: { item: CachedPrediction }) => {
         // Navigate to scan details with the full prediction data
         router.push({
           pathname: "/scan-details",
-          params: { scanId: item.class_id },
+          params: {
+            predictionId: item.timestamp.toString(),
+            imageUri: item.imageUri,
+          },
         });
       }}
     >
