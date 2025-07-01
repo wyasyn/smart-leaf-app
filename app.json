@@ -19,7 +19,8 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "package": "com.yasyn.smartleafapp"
     },
     "web": {
       "bundler": "metro",
