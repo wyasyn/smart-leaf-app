@@ -223,7 +223,7 @@ export const usePlantDiseaseStore = create<PlantDiseaseStore>()(
         diseaseCache: {},
 
         // Cache settings
-        cacheExpiryMinutes: 30,
+        cacheExpiryMinutes: 10080,
         maxCacheSize: 100,
 
         // Network status

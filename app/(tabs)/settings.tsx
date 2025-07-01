@@ -30,6 +30,7 @@ export default function SettingsScreen() {
     isOnline,
     healthStatus,
     clearCache,
+    apiStats,
     clearPredictionHistory,
     checkHealth,
     isCheckingHealth,
@@ -83,7 +84,15 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>
+      <Text
+        style={{
+          fontSize: 24,
+          fontWeight: "bold",
+          marginBottom: 20,
+          textAlign: "center",
+          marginTop: 20,
+        }}
+      >
         Settings
       </Text>
 
@@ -139,6 +148,28 @@ export default function SettingsScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Stats */}
+      {apiStats && (
+        <View
+          style={{
+            backgroundColor: "#f9f9f9",
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 16,
+          }}
+        >
+          <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 4 }}>
+            Database Stats
+          </Text>
+          <Text>Total Diseases: {apiStats.diseases_in_guide}</Text>
+          <Text>Supported Crops: {apiStats.supported_crops.length}</Text>
+          <Text>
+            Model Status:{" "}
+            {apiStats.model_loaded ? "✅ Loaded" : "❌ Not Loaded"}
+          </Text>
+        </View>
+      )}
 
       {/* Status Information */}
       <View style={{ marginBottom: 24 }}>
@@ -250,8 +281,9 @@ export default function SettingsScreen() {
 
         <Text style={{ color: "#666", lineHeight: 20 }}>
           Plant Disease Detection App{"\n"}
-          Version 1.0.0{"\n"}
-          Built with React Native and Zustand
+          Version 2.4.3{"\n"}
+          Built with React Native and Zustand {"\n"}
+          Developer ={">"} Yasin Walum
         </Text>
       </View>
     </ScrollView>

@@ -1,4 +1,5 @@
-import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
+import { getRelativeTime } from "@/utils/lib";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -6,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  FlatList,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -33,11 +35,24 @@ const HistoryScreen = () => {
 
   const [refreshing, setRefreshing] = useState(false);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    // Force refresh cached predictions
-    getCachedPredictions();
+    await getCachedPredictions(); // wait for the refresh
     setRefreshing(false);
+  };
+
+  const getWeekdayLabels = () => {
+    const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const today = new Date();
+    const labels = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      labels.push(weekdays[d.getDay()]);
+    }
+
+    return labels;
   };
 
   const handleDeleteAll = () => {
@@ -74,22 +89,6 @@ const HistoryScreen = () => {
     return weeklyData;
   };
 
-  const getRelativeTime = (timestamp: number): string => {
-    const now = Date.now();
-    const diff = now - timestamp;
-
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (minutes < 1) return "Just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-
-    return new Date(timestamp).toLocaleDateString();
-  };
-
   const today = new Date().toDateString();
 
   const scansToday: number = predictionHistory.filter(
@@ -120,7 +119,11 @@ const HistoryScreen = () => {
       >
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: item.imageUri }}
+            source={
+              item.imageUri
+                ? { uri: item.imageUri }
+                : require("../../assets/images/placeholder-image.png")
+            }
             style={styles.predictionImage}
             contentFit="cover"
           />
@@ -197,7 +200,7 @@ const HistoryScreen = () => {
   };
 
   const chartData = {
-    labels: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    labels: getWeekdayLabels(),
     datasets: [
       {
         data: getWeeklyStats(),
@@ -282,11 +285,12 @@ const HistoryScreen = () => {
             </View>
 
             <View style={styles.listContainer}>
-              {predictionHistory.map((item) => (
-                <View key={item.timestamp.toString()}>
-                  {renderItem({ item })}
-                </View>
-              ))}
+              <FlatList
+                data={predictionHistory}
+                keyExtractor={(item) => item.timestamp.toString()}
+                renderItem={renderItem}
+                scrollEnabled={false}
+              />
             </View>
           </>
         ) : (
@@ -299,10 +303,6 @@ const HistoryScreen = () => {
           </View>
         )}
       </ScrollView>
-
-      <TouchableOpacity onPress={() => router.push("/scan")} style={styles.fab}>
-        <AntDesign name="camerao" size={24} color="#fff" />
-      </TouchableOpacity>
     </View>
   );
 };
@@ -325,11 +325,12 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 26,
     paddingBottom: 16,
+    gap: 4,
   },
   title: {
     fontSize: 24,
@@ -380,6 +381,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: 20,
     paddingBottom: 100,
+    paddingTop: 16,
   },
   predictionItem: {
     backgroundColor: "#fff",
@@ -467,22 +469,6 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     textAlign: "center",
     lineHeight: 20,
-  },
-  fab: {
-    position: "absolute",
-    bottom: 150,
-    right: 20,
-    backgroundColor: "#E50046",
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
 });
 

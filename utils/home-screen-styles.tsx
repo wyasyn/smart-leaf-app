@@ -161,26 +161,23 @@ export const stylesHome = StyleSheet.create({
   },
   carousel: {
     paddingLeft: 20,
-    paddingBottom: 24,
   },
   carouselContent: {
-    paddingRight: 20,
+    paddingRight: 18,
   },
   carouselItem: {
-    width: 200,
+    width: 130,
     backgroundColor: "#fff",
-    borderRadius: 16,
-    marginRight: 16,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+
+    marginRight: 12,
+
     overflow: "hidden",
   },
   carouselImageContainer: {
     position: "relative",
-    height: 120,
+    height: 180,
+    overflow: "hidden",
+    borderRadius: 8,
   },
   carouselImage: {
     width: "100%",
@@ -196,18 +193,18 @@ export const stylesHome = StyleSheet.create({
     borderRadius: 20,
   },
   carouselTitle: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: "bold",
     color: "#2C5530",
     marginBottom: 4,
-    paddingHorizontal: 8,
+
     paddingTop: 8,
   },
   carouselDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#666",
-    lineHeight: 16,
-    paddingHorizontal: 8,
+    lineHeight: 12,
+
     paddingBottom: 10,
   },
 

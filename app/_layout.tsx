@@ -6,6 +6,8 @@ const MainLayout = () => {
     <Stack initialRouteName="(tabs)" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="scan" />
+      <Stack.Screen name="scan-details" />
+      <Stack.Screen name="disease/[id]" />
     </Stack>
   );
 };

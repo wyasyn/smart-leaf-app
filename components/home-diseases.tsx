@@ -22,7 +22,7 @@ const HomeDiseases = () => {
       <FlatList
         style={{
           marginLeft: 20,
-          marginRight: 20,
+
           paddingBottom: 24,
         }}
         data={allDiseases}

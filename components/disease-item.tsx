@@ -26,8 +26,10 @@ const renderCarouselItem = ({ item }: { item: SearchResult }) => (
       />
     </View>
     <View style={styles.carouselContent}>
-      <Text style={styles.carouselTitle}>{item.disease_info.disease_name}</Text>
-      <Text style={styles.carouselDescription} numberOfLines={2}>
+      <Text numberOfLines={1} style={styles.carouselTitle}>
+        {item.disease_info.disease_name}
+      </Text>
+      <Text style={styles.carouselDescription} numberOfLines={1}>
         {item.disease_info.description}
       </Text>
     </View>

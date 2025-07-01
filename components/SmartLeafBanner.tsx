@@ -17,11 +17,14 @@ const SmartLeafBanner = () => {
         style={styles.gradient}
       >
         <Image
-          source={require("../assets/images/icon.png")} // Your logo path
+          source={require("../assets/images/icon.png")}
           style={styles.logo}
           resizeMode="contain"
         />
         <Text style={styles.title}>Smart Leaf</Text>
+        <Text style={styles.subtitle}>
+          Scan leaves, diagnose diseases, and get instant treatment advice.
+        </Text>
       </LinearGradient>
     </ImageBackground>
   );
@@ -29,13 +32,15 @@ const SmartLeafBanner = () => {
 
 const styles = StyleSheet.create({
   background: {
-    height: 250,
+    height: 300,
     width: "100%",
   },
   gradient: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 32,
+    paddingHorizontal: 16,
   },
   logo: {
     width: 60,
@@ -46,6 +51,12 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     color: colors.title,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.text,
+    textAlign: "center",
+    marginTop: 6,
   },
 });
 

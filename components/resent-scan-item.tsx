@@ -47,7 +47,7 @@ const renderRecentScan = ({ item }: { item: CachedPrediction }) => {
             <Text
               style={[styles.confidenceText, { color: confidenceColors.color }]}
             >
-              {Math.round(item.confidence)}%
+              {Math.round(item.confidence * 100)}%
             </Text>
           </View>
         </View>
