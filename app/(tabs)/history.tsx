@@ -22,16 +22,20 @@ import {
 } from "../../store/plantDiseaseStore";
 
 const HistoryScreen = () => {
-  const {
-    predictionHistory,
-    getCachedPredictions,
-    clearPredictionHistory,
-    isLoading,
-  } = usePlantDiseaseStore();
+  const predictionHistory = usePlantDiseaseStore(
+    (state) => state.predictionHistory
+  );
+  const getCachedPredictions = usePlantDiseaseStore(
+    (state) => state.getCachedPredictions
+  );
+  const clearPredictionHistory = usePlantDiseaseStore(
+    (state) => state.clearPredictionHistory
+  );
+  const isLoading = usePlantDiseaseStore((state) => state.isLoading);
 
   useEffect(() => {
     getCachedPredictions();
-  }, []);
+  }, [getCachedPredictions]);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -108,7 +112,7 @@ const HistoryScreen = () => {
       <TouchableOpacity
         onPress={() =>
           router.push({
-            pathname: "/scan-details",
+            pathname: "/scan-details/[predictionId]",
             params: {
               predictionId: item.timestamp.toString(),
               imageUri: item.imageUri,

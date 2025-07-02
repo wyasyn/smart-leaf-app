@@ -19,7 +19,9 @@ import renderRecentScan from "./resent-scan-item";
 const { width } = Dimensions.get("window");
 
 function HomeHistory() {
-  const { predictionHistory } = usePlantDiseaseStore();
+  const predictionHistory = usePlantDiseaseStore(
+    (state) => state.predictionHistory
+  );
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -43,7 +45,7 @@ function HomeHistory() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [predictionHistory.length]);
+  }, [predictionHistory.length, fadeAnim, slideAnim, scaleAnim]);
 
   const handleSeeAllPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

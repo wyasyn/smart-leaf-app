@@ -232,8 +232,7 @@ export const usePlantDiseaseStore = create<PlantDiseaseStore>()(
 
         // API Methods
         predictDisease: async (imageUri: string) => {
-          const { baseUrl, isOnline, cacheExpiryMinutes, predictionHistory } =
-            get();
+          const { baseUrl, isOnline } = get();
 
           if (!isOnline) {
             set({ predictionError: "No internet connection" });

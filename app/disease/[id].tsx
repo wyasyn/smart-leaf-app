@@ -17,14 +17,18 @@ import { usePlantDiseaseStore } from "../../store/plantDiseaseStore";
 export default function DiseaseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { getDiseaseById, currentDisease, isFetchingDisease, diseaseError } =
-    usePlantDiseaseStore();
+  const getDiseaseById = usePlantDiseaseStore((state) => state.getDiseaseById);
+  const currentDisease = usePlantDiseaseStore((state) => state.currentDisease);
+  const isFetchingDisease = usePlantDiseaseStore(
+    (state) => state.isFetchingDisease
+  );
+  const diseaseError = usePlantDiseaseStore((state) => state.diseaseError);
 
   useEffect(() => {
     if (id) {
       getDiseaseById(id);
     }
-  }, [id]);
+  }, [id, getDiseaseById]);
 
   const openExternalResource = (url: string) => {
     Linking.openURL(url);

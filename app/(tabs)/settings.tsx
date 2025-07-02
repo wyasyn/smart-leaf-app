@@ -22,20 +22,26 @@ export default function SettingsScreen() {
   useNetworkMonitor();
   useAutoHealthCheck(5); // Check health every 5 minutes
 
-  const {
-    baseUrl,
-    setBaseUrl,
-    cacheExpiryMinutes,
-    maxCacheSize,
-    isOnline,
-    healthStatus,
-    clearCache,
-    apiStats,
-    clearPredictionHistory,
-    checkHealth,
-    isCheckingHealth,
-    predictionHistory,
-  } = usePlantDiseaseStore();
+  const baseUrl = usePlantDiseaseStore((state) => state.baseUrl);
+  const setBaseUrl = usePlantDiseaseStore((state) => state.setBaseUrl);
+  const cacheExpiryMinutes = usePlantDiseaseStore(
+    (state) => state.cacheExpiryMinutes
+  );
+  const maxCacheSize = usePlantDiseaseStore((state) => state.maxCacheSize);
+  const isOnline = usePlantDiseaseStore((state) => state.isOnline);
+  const healthStatus = usePlantDiseaseStore((state) => state.healthStatus);
+  const clearCache = usePlantDiseaseStore((state) => state.clearCache);
+  const apiStats = usePlantDiseaseStore((state) => state.apiStats);
+  const clearPredictionHistory = usePlantDiseaseStore(
+    (state) => state.clearPredictionHistory
+  );
+  const checkHealth = usePlantDiseaseStore((state) => state.checkHealth);
+  const isCheckingHealth = usePlantDiseaseStore(
+    (state) => state.isCheckingHealth
+  );
+  const predictionHistory = usePlantDiseaseStore(
+    (state) => state.predictionHistory
+  );
 
   const [tempBaseUrl, setTempBaseUrl] = useState(baseUrl);
 

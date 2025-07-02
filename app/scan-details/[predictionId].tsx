@@ -16,12 +16,14 @@ import {
 } from "react-native";
 
 const ScanDetailsScreen = () => {
-  const { predictionId, imageUri } = useLocalSearchParams<{
+  const { predictionId } = useLocalSearchParams<{
     predictionId: string;
     imageUri: string;
   }>();
 
-  const { predictionHistory } = usePlantDiseaseStore();
+  const predictionHistory = usePlantDiseaseStore(
+    (state) => state.predictionHistory
+  );
   const [prediction, setPrediction] = useState<CachedPrediction | null>(null);
 
   useEffect(() => {

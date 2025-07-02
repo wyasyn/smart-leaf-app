@@ -17,23 +17,21 @@ export default function BrowseScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCrop, setSelectedCrop] = useState<string | null>("All"); // Set "All" as default
 
-  const {
-    searchDiseases,
-    getAllDiseases,
-    getApiStats,
-    searchResults,
-    allDiseases,
-    apiStats,
-    isSearching,
-    isLoading,
-    searchError,
-    error,
-  } = usePlantDiseaseStore();
+  const searchDiseases = usePlantDiseaseStore((state) => state.searchDiseases);
+  const getAllDiseases = usePlantDiseaseStore((state) => state.getAllDiseases);
+  const getApiStats = usePlantDiseaseStore((state) => state.getApiStats);
+  const searchResults = usePlantDiseaseStore((state) => state.searchResults);
+  const allDiseases = usePlantDiseaseStore((state) => state.allDiseases);
+  const apiStats = usePlantDiseaseStore((state) => state.apiStats);
+  const isSearching = usePlantDiseaseStore((state) => state.isSearching);
+  const isLoading = usePlantDiseaseStore((state) => state.isLoading);
+  const searchError = usePlantDiseaseStore((state) => state.searchError);
+  const error = usePlantDiseaseStore((state) => state.error);
 
   useEffect(() => {
     getAllDiseases();
     getApiStats();
-  }, []);
+  }, [getAllDiseases, getApiStats]);
 
   // Auto-search effect with debouncing
   useEffect(() => {
@@ -173,7 +171,7 @@ export default function BrowseScreen() {
                   }
                   style={{
                     backgroundColor:
-                      selectedCrop === item ? "#007AFF" : "#f0f0f0",
+                      selectedCrop === item ? colors.primary : "#f0f0f0",
                     paddingBlock: 8,
                     paddingInline: 16,
                     marginRight: 8,

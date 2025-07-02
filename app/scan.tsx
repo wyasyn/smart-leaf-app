@@ -204,14 +204,6 @@ export default function PlantScannerScreen() {
         {!result ? (
           /* Control Buttons */
           <View style={enhancedStyles.controlsContainer}>
-            <TouchableOpacity
-              style={enhancedStyles.secondaryButton}
-              onPress={clearImage}
-            >
-              <MaterialIcons name="clear" size={20} color="#666" />
-              <Text style={enhancedStyles.secondaryButtonText}>Clear</Text>
-            </TouchableOpacity>
-
             {/* Enhanced Analyze Button */}
             <TouchableOpacity
               style={[
@@ -244,6 +236,13 @@ export default function PlantScannerScreen() {
                   </View>
                 )}
               </LinearGradient>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={enhancedStyles.secondaryButton}
+              onPress={clearImage}
+            >
+              <MaterialIcons name="clear" size={20} color="#666" />
+              <Text style={enhancedStyles.secondaryButtonText}>Clear</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -389,27 +388,26 @@ export default function PlantScannerScreen() {
         ref={ref}
         facing={facing}
         mode="picture"
-      >
-        <View style={styles.cameraOverlay}>
-          <Text style={styles.instructionText}>
-            Position the plant leaf within the frame
-          </Text>
-        </View>
+      />
+      <View style={styles.cameraOverlay}>
+        <Text style={styles.instructionText}>
+          Position the plant leaf within the frame
+        </Text>
+      </View>
 
-        <View style={styles.cameraControls}>
-          <TouchableOpacity style={styles.cameraButton} onPress={openGallery}>
-            <MaterialIcons name="photo-library" size={28} color="white" />
-          </TouchableOpacity>
+      <View style={styles.cameraControls}>
+        <TouchableOpacity style={styles.cameraButton} onPress={openGallery}>
+          <MaterialIcons name="photo-library" size={28} color="white" />
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.shutterButton} onPress={takePicture}>
-            <View style={styles.shutterButtonInner} />
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.shutterButton} onPress={takePicture}>
+          <View style={styles.shutterButtonInner} />
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.cameraButton} onPress={toggleFacing}>
-            <MaterialIcons name="flip-camera-ios" size={28} color="white" />
-          </TouchableOpacity>
-        </View>
-      </CameraView>
+        <TouchableOpacity style={styles.cameraButton} onPress={toggleFacing}>
+          <MaterialIcons name="flip-camera-ios" size={28} color="white" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -496,14 +494,15 @@ const enhancedStyles = StyleSheet.create({
     height: 60,
   },
   controlsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+    gap: 24,
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 24,
   },
   secondaryButton: {
     flexDirection: "row",
+    width: "100%",
+    justifyContent: "center",
     alignItems: "center",
     backgroundColor: "white",
     paddingHorizontal: 16,
@@ -522,6 +521,8 @@ const enhancedStyles = StyleSheet.create({
     fontWeight: "500",
   },
   analyzeButton: {
+    width: "100%",
+    justifyContent: "center",
     shadowColor: "#4CAF50",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

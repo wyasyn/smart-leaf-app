@@ -6,7 +6,8 @@ import { stylesHome as styles } from "../utils/home-screen-styles";
 import renderCarouselItem from "./disease-item";
 
 const HomeDiseases = () => {
-  const { allDiseases, getAllDiseases } = usePlantDiseaseStore();
+  const allDiseases = usePlantDiseaseStore((state) => state.allDiseases);
+  const getAllDiseases = usePlantDiseaseStore((state) => state.getAllDiseases);
 
   useEffect(() => {
     getAllDiseases();
