@@ -13,6 +13,19 @@ if (!API_URL) {
 
 // Types based on your API
 
+export interface LeafValidationResponse {
+  is_leaf: boolean;
+  confidence: number;
+  reason: string;
+  validation_method: string;
+}
+
+export interface ValidationError {
+  error: string;
+  validation: LeafValidationResponse;
+  suggestion: string;
+}
+
 export interface PredictionItem {
   confidence: number;
   label: string;
@@ -114,6 +127,11 @@ interface PlantDiseaseStore {
   isFetchingDisease: boolean;
   isCheckingHealth: boolean;
 
+  // validation states
+  isValidatingLeaf: boolean;
+  leafValidationError: string | null;
+  lastLeafValidation: LeafValidationResponse | null;
+
   // Error states
   error: string | null;
   predictionError: string | null;
@@ -139,6 +157,9 @@ interface PlantDiseaseStore {
   maxCacheSize: number;
 
   // API Methods
+  validateLeafOnly: (
+    imageUri: string
+  ) => Promise<LeafValidationResponse | null>;
   predictDisease: (imageUri: string) => Promise<PredictionResponse | null>;
   searchDiseases: (
     query: string,
@@ -216,6 +237,10 @@ export const usePlantDiseaseStore = create<PlantDiseaseStore>()(
         currentDisease: null,
         healthStatus: null,
         apiStats: null,
+        // New validation states
+        isValidatingLeaf: false,
+        leafValidationError: null,
+        lastLeafValidation: null,
 
         // Cache
         predictionHistory: [],
@@ -345,6 +370,48 @@ export const usePlantDiseaseStore = create<PlantDiseaseStore>()(
             const errorMessage =
               error instanceof Error ? error.message : "Search failed";
             set({ searchError: errorMessage, isSearching: false });
+            return null;
+          }
+        },
+        validateLeafOnly: async (imageUri: string) => {
+          const { baseUrl, isOnline } = get();
+
+          if (!isOnline) {
+            set({ leafValidationError: "No internet connection" });
+            return null;
+          }
+
+          set({ isValidatingLeaf: true, leafValidationError: null });
+
+          try {
+            const formData = createFormData(imageUri);
+
+            const response = await fetch(`${baseUrl}/validate-leaf`, {
+              method: "POST",
+              body: formData,
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(
+                `HTTP ${response.status}: ${response.statusText}`
+              );
+            }
+
+            const data: LeafValidationResponse = await response.json();
+
+            set({
+              lastLeafValidation: data,
+              isValidatingLeaf: false,
+            });
+
+            return data;
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Leaf validation failed";
+            set({ leafValidationError: errorMessage, isValidatingLeaf: false });
             return null;
           }
         },
@@ -616,6 +683,7 @@ export const usePlantDiseaseStore = create<PlantDiseaseStore>()(
           diseaseCache: state.diseaseCache,
           cacheExpiryMinutes: state.cacheExpiryMinutes,
           maxCacheSize: state.maxCacheSize,
+          lastLeafValidation: state.lastLeafValidation,
         }),
       }
     )
@@ -630,7 +698,8 @@ export const useIsLoading = () =>
       state.isPredicting ||
       state.isSearching ||
       state.isFetchingDisease ||
-      state.isCheckingHealth
+      state.isCheckingHealth ||
+      state.isValidatingLeaf
   );
 
 export const useHasErrors = () =>
@@ -641,7 +710,8 @@ export const useHasErrors = () =>
         state.predictionError ||
         state.searchError ||
         state.diseaseError ||
-        state.healthError
+        state.healthError ||
+        state.leafValidationError
       )
   );
 
@@ -652,6 +722,14 @@ export const useAllErrors = () =>
     search: state.searchError,
     disease: state.diseaseError,
     health: state.healthError,
+    leafValidation: state.leafValidationError,
+  }));
+
+export const useLeafValidation = () =>
+  usePlantDiseaseStore((state) => ({
+    isValidating: state.isValidatingLeaf,
+    lastValidation: state.lastLeafValidation,
+    error: state.leafValidationError,
   }));
 
 // Network status hook

@@ -31,17 +31,23 @@ export default function PlantScannerScreen() {
   const ref = useRef<CameraView>(null);
   const [facing, setFacing] = useState<CameraType>("back");
   const [result, setResult] = useState<PredictionResponse | null>(null);
+
   const [uri, setUri] = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
-  const {
-    predictDisease,
-    isPredicting,
-    predictionError,
-    clearAllErrors,
-    getCachedPredictions,
-  } = usePlantDiseaseStore();
+  const validateLeafOnly = usePlantDiseaseStore(
+    (state) => state.validateLeafOnly
+  );
+  const predictDisease = usePlantDiseaseStore((state) => state.predictDisease);
+  const isPredicting = usePlantDiseaseStore((state) => state.isPredicting);
+  const predictionError = usePlantDiseaseStore(
+    (state) => state.predictionError
+  );
+  const clearAllErrors = usePlantDiseaseStore((state) => state.clearAllErrors);
+  const getCachedPredictions = usePlantDiseaseStore(
+    (state) => state.getCachedPredictions
+  );
 
   // Animate results when they appear
   const animateResults = () => {
@@ -98,7 +104,26 @@ export default function PlantScannerScreen() {
         quality: 0.8,
         base64: false,
       });
-      if (photo?.uri) setUri(photo.uri);
+      if (photo?.uri) {
+        const res = await validateLeafOnly(photo.uri);
+        if (!res?.is_leaf) {
+          Alert.alert(
+            "Not a Leaf Image",
+            `This image doesn't appear to contain a leaf.${
+              res
+                ? `\n\nReason: ${res.reason}\n\nConfidence: ${(
+                    res.confidence * 100
+                  ).toFixed(
+                    1
+                  )}%\n\nPlease try uploading a clear image of a plant leaf.`
+                : ""
+            }`,
+            [{ text: "OK" }]
+          );
+        } else {
+          setUri(photo.uri);
+        }
+      }
     } catch {
       Alert.alert("Error", "Failed to take picture. Please try again.");
     }
@@ -121,8 +146,26 @@ export default function PlantScannerScreen() {
       });
 
       if (!result.canceled && result.assets.length > 0) {
-        setUri(result.assets[0].uri);
-        clearAllErrors();
+        const res = await validateLeafOnly(result.assets[0].uri);
+
+        if (!res?.is_leaf) {
+          Alert.alert(
+            "Not a Leaf Image",
+            `This image doesn't appear to contain a leaf.${
+              res
+                ? `\n\nReason: ${res.reason}\n\nConfidence: ${(
+                    res.confidence * 100
+                  ).toFixed(
+                    1
+                  )}%\n\nPlease try uploading a clear image of a plant leaf.`
+                : ""
+            }`,
+            [{ text: "OK" }]
+          );
+        } else {
+          setUri(result.assets[0].uri);
+          clearAllErrors();
+        }
       }
     } catch {
       Alert.alert("Error", "Failed to open gallery.");
@@ -165,167 +208,113 @@ export default function PlantScannerScreen() {
   };
 
   const renderImageView = () => (
-    <View style={enhancedStyles.imageViewContainer}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
-      />
+    <>
+      <View style={enhancedStyles.imageViewContainer}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="transparent"
+          translucent
+        />
 
-      {/* Header with back button */}
-      <LinearGradient
-        colors={["rgba(0,0,0,0.7)", "transparent"]}
-        style={enhancedStyles.headerGradient}
-      >
-        <TouchableOpacity style={enhancedStyles.backButton} onPress={goBack}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-      </LinearGradient>
+        {/* Header with back button */}
+        <LinearGradient
+          colors={["rgba(0,0,0,0.7)", "transparent"]}
+          style={enhancedStyles.headerGradient}
+        >
+          <TouchableOpacity style={enhancedStyles.backButton} onPress={goBack}>
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+        </LinearGradient>
 
-      <ScrollView
-        style={enhancedStyles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Image Display */}
-        <View style={enhancedStyles.imageContainer}>
-          <Image
-            source={{ uri: uri! }}
-            contentFit="cover"
-            style={enhancedStyles.capturedImage}
-          />
+        <ScrollView
+          style={enhancedStyles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Image Display */}
+          <View style={enhancedStyles.imageContainer}>
+            <Image
+              source={{ uri: uri! }}
+              contentFit="cover"
+              style={enhancedStyles.capturedImage}
+            />
 
-          {/* Image overlay gradient */}
-          <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.3)"]}
-            style={enhancedStyles.imageOverlay}
-          />
-        </View>
-
-        {!result ? (
-          /* Control Buttons */
-          <View style={enhancedStyles.controlsContainer}>
-            {/* Enhanced Analyze Button */}
-            <TouchableOpacity
-              style={[
-                enhancedStyles.analyzeButton,
-                isPredicting && enhancedStyles.analyzeButtonDisabled,
-              ]}
-              onPress={handlePredict}
-              disabled={isPredicting}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={
-                  isPredicting ? ["#cccccc", "#999999"] : ["#4CAF50", "#45a049"]
-                }
-                style={enhancedStyles.analyzeButtonGradient}
-              >
-                {isPredicting ? (
-                  <View style={enhancedStyles.loadingContainer}>
-                    <ActivityIndicator color="white" size="small" />
-                    <Text style={enhancedStyles.analyzeButtonText}>
-                      Analyzing...
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={enhancedStyles.buttonContent}>
-                    <MaterialIcons name="psychology" size={20} color="white" />
-                    <Text style={enhancedStyles.analyzeButtonText}>
-                      Analyze Plant
-                    </Text>
-                  </View>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={enhancedStyles.secondaryButton}
-              onPress={clearImage}
-            >
-              <MaterialIcons name="clear" size={20} color="#666" />
-              <Text style={enhancedStyles.secondaryButtonText}>Clear</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={enhancedStyles.secondaryButton}
-              onPress={() => setUri(null)}
-            >
-              <MaterialIcons name="camera-alt" size={20} color="#666" />
-              <Text style={enhancedStyles.secondaryButtonText}>Retake</Text>
-            </TouchableOpacity>
+            {/* Image overlay gradient */}
+            <LinearGradient
+              colors={["transparent", "rgba(0,0,0,0.3)"]}
+              style={enhancedStyles.imageOverlay}
+            />
           </View>
-        ) : (
-          /* Results Section */
-          <Animated.View
-            style={[
-              enhancedStyles.resultsContainer,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            {/* Disease Card */}
-            <BlurView
-              intensity={95}
-              tint="light"
-              style={enhancedStyles.resultCard}
-            >
-              <View style={enhancedStyles.cardHeader}>
-                <MaterialIcons
-                  name="local-hospital"
-                  size={24}
-                  color="#4CAF50"
-                />
-                <Text style={enhancedStyles.cardTitle}>Diagnosis</Text>
-              </View>
 
-              <Text style={enhancedStyles.diseaseName}>
-                {result.clean_class_name}
-              </Text>
-
-              {/* Confidence Indicator */}
-              <View style={enhancedStyles.confidenceContainer}>
-                <Text style={enhancedStyles.confidenceLabel}>Confidence</Text>
-                <View style={enhancedStyles.confidenceBar}>
-                  <View
-                    style={[
-                      enhancedStyles.confidenceFill,
-                      {
-                        width: `${result.confidence * 100}%`,
-                        backgroundColor: getConfidenceColor(result.confidence),
-                      },
-                    ]}
-                  />
-                </View>
-                <Text
-                  style={[
-                    enhancedStyles.confidenceText,
-                    { color: getConfidenceColor(result.confidence) },
-                  ]}
+          {!result ? (
+            /* Control Buttons */
+            <View style={enhancedStyles.controlsContainer}>
+              {/* Enhanced Analyze Button */}
+              <TouchableOpacity
+                style={[
+                  enhancedStyles.analyzeButton,
+                  isPredicting && enhancedStyles.analyzeButtonDisabled,
+                ]}
+                onPress={handlePredict}
+                disabled={isPredicting}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={
+                    isPredicting
+                      ? ["#cccccc", "#999999"]
+                      : ["#4CAF50", "#45a049"]
+                  }
+                  style={enhancedStyles.analyzeButtonGradient}
                 >
-                  {(result.confidence * 100).toFixed(1)}% (
-                  {result.confidence_level})
-                </Text>
-              </View>
-            </BlurView>
+                  {isPredicting ? (
+                    <View style={enhancedStyles.loadingContainer}>
+                      <ActivityIndicator color="white" size="small" />
+                      <Text style={enhancedStyles.analyzeButtonText}>
+                        Analyzing...
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={enhancedStyles.buttonContent}>
+                      <MaterialIcons
+                        name="psychology"
+                        size={20}
+                        color="white"
+                      />
+                      <Text style={enhancedStyles.analyzeButtonText}>
+                        Analyze Plant
+                      </Text>
+                    </View>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={enhancedStyles.secondaryButton}
+                onPress={clearImage}
+              >
+                <MaterialIcons name="clear" size={20} color="#666" />
+                <Text style={enhancedStyles.secondaryButtonText}>Clear</Text>
+              </TouchableOpacity>
 
-            {/* Description Card */}
-            <BlurView
-              intensity={95}
-              tint="light"
-              style={enhancedStyles.resultCard}
+              <TouchableOpacity
+                style={enhancedStyles.secondaryButton}
+                onPress={() => setUri(null)}
+              >
+                <MaterialIcons name="camera-alt" size={20} color="#666" />
+                <Text style={enhancedStyles.secondaryButtonText}>Retake</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            /* Results Section */
+            <Animated.View
+              style={[
+                enhancedStyles.resultsContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
             >
-              <View style={enhancedStyles.cardHeader}>
-                <MaterialIcons name="info-outline" size={24} color="#2196F3" />
-                <Text style={enhancedStyles.cardTitle}>Description</Text>
-              </View>
-              <Text style={enhancedStyles.descriptionText}>
-                {result.disease_info.description}
-              </Text>
-            </BlurView>
-
-            {/* Recommendations Card */}
-            {result.recommendations.length > 0 && (
+              {/* Disease Card */}
               <BlurView
                 intensity={95}
                 tint="light"
@@ -333,48 +322,120 @@ export default function PlantScannerScreen() {
               >
                 <View style={enhancedStyles.cardHeader}>
                   <MaterialIcons
-                    name="lightbulb-outline"
+                    name="local-hospital"
                     size={24}
-                    color="#FF9800"
+                    color="#4CAF50"
                   />
-                  <Text style={enhancedStyles.cardTitle}>Recommendations</Text>
+                  <Text style={enhancedStyles.cardTitle}>Diagnosis</Text>
                 </View>
-                {result.recommendations.map((rec, index) => (
-                  <View key={index} style={enhancedStyles.recommendationItem}>
-                    <View style={enhancedStyles.bulletPoint} />
-                    <Text style={enhancedStyles.recommendationText}>{rec}</Text>
-                  </View>
-                ))}
-              </BlurView>
-            )}
 
-            {/* Action Button */}
-            <TouchableOpacity
-              style={enhancedStyles.actionButton}
-              onPress={clearImage}
-            >
-              <LinearGradient
-                colors={["#2196F3", "#1976D2"]}
-                style={enhancedStyles.actionButtonGradient}
-              >
-                <MaterialIcons name="refresh" size={20} color="white" />
-                <Text style={enhancedStyles.actionButtonText}>
-                  Scan Another Plant
+                <Text style={enhancedStyles.diseaseName}>
+                  {result.clean_class_name}
                 </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
 
-        {/* Error Display */}
-        {predictionError && (
-          <View style={enhancedStyles.errorContainer}>
-            <MaterialIcons name="error-outline" size={20} color="white" />
-            <Text style={enhancedStyles.errorText}>{predictionError}</Text>
-          </View>
-        )}
-      </ScrollView>
-    </View>
+                {/* Confidence Indicator */}
+                <View style={enhancedStyles.confidenceContainer}>
+                  <Text style={enhancedStyles.confidenceLabel}>Confidence</Text>
+                  <View style={enhancedStyles.confidenceBar}>
+                    <View
+                      style={[
+                        enhancedStyles.confidenceFill,
+                        {
+                          width: `${result.confidence * 100}%`,
+                          backgroundColor: getConfidenceColor(
+                            result.confidence
+                          ),
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      enhancedStyles.confidenceText,
+                      { color: getConfidenceColor(result.confidence) },
+                    ]}
+                  >
+                    {(result.confidence * 100).toFixed(1)}% (
+                    {result.confidence_level})
+                  </Text>
+                </View>
+              </BlurView>
+
+              {/* Description Card */}
+              <BlurView
+                intensity={95}
+                tint="light"
+                style={enhancedStyles.resultCard}
+              >
+                <View style={enhancedStyles.cardHeader}>
+                  <MaterialIcons
+                    name="info-outline"
+                    size={24}
+                    color="#2196F3"
+                  />
+                  <Text style={enhancedStyles.cardTitle}>Description</Text>
+                </View>
+                <Text style={enhancedStyles.descriptionText}>
+                  {result.disease_info.description}
+                </Text>
+              </BlurView>
+
+              {/* Recommendations Card */}
+              {result.recommendations.length > 0 && (
+                <BlurView
+                  intensity={95}
+                  tint="light"
+                  style={enhancedStyles.resultCard}
+                >
+                  <View style={enhancedStyles.cardHeader}>
+                    <MaterialIcons
+                      name="lightbulb-outline"
+                      size={24}
+                      color="#FF9800"
+                    />
+                    <Text style={enhancedStyles.cardTitle}>
+                      Recommendations
+                    </Text>
+                  </View>
+                  {result.recommendations.map((rec, index) => (
+                    <View key={index} style={enhancedStyles.recommendationItem}>
+                      <View style={enhancedStyles.bulletPoint} />
+                      <Text style={enhancedStyles.recommendationText}>
+                        {rec}
+                      </Text>
+                    </View>
+                  ))}
+                </BlurView>
+              )}
+
+              {/* Action Button */}
+              <TouchableOpacity
+                style={enhancedStyles.actionButton}
+                onPress={clearImage}
+              >
+                <LinearGradient
+                  colors={["#2196F3", "#1976D2"]}
+                  style={enhancedStyles.actionButtonGradient}
+                >
+                  <MaterialIcons name="refresh" size={20} color="white" />
+                  <Text style={enhancedStyles.actionButtonText}>
+                    Scan Another Plant
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
+          {/* Error Display */}
+          {predictionError && (
+            <View style={enhancedStyles.errorContainer}>
+              <MaterialIcons name="error-outline" size={20} color="white" />
+              <Text style={enhancedStyles.errorText}>{predictionError}</Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </>
   );
 
   const renderCamera = () => (
