@@ -7,7 +7,7 @@ import { CameraType } from "expo-camera/build/Camera.types";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 
+import ValidateImage from "@/components/vaidate-image";
 import {
   PredictionResponse,
   usePlantDiseaseStore,
@@ -31,6 +32,7 @@ export default function PlantScannerScreen() {
   const ref = useRef<CameraView>(null);
   const [facing, setFacing] = useState<CameraType>("back");
   const [result, setResult] = useState<PredictionResponse | null>(null);
+  const [validatingLeaf, setValidatingLeaf] = useState(false);
 
   const [uri, setUri] = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -105,6 +107,7 @@ export default function PlantScannerScreen() {
         base64: false,
       });
       if (photo?.uri) {
+        setValidatingLeaf(true);
         const res = await validateLeafOnly(photo.uri);
         if (!res?.is_leaf) {
           Alert.alert(
@@ -126,6 +129,8 @@ export default function PlantScannerScreen() {
       }
     } catch {
       Alert.alert("Error", "Failed to take picture. Please try again.");
+    } finally {
+      setValidatingLeaf(false);
     }
   };
 
@@ -146,6 +151,7 @@ export default function PlantScannerScreen() {
       });
 
       if (!result.canceled && result.assets.length > 0) {
+        setValidatingLeaf(true);
         const res = await validateLeafOnly(result.assets[0].uri);
 
         if (!res?.is_leaf) {
@@ -169,6 +175,8 @@ export default function PlantScannerScreen() {
       }
     } catch {
       Alert.alert("Error", "Failed to open gallery.");
+    } finally {
+      setValidatingLeaf(false);
     }
   };
 
@@ -472,7 +480,12 @@ export default function PlantScannerScreen() {
     </View>
   );
 
-  return uri ? renderImageView() : renderCamera();
+  return (
+    <>
+      {uri ? renderImageView() : renderCamera()}
+      {validatingLeaf && <ValidateImage />}
+    </>
+  );
 }
 
 const enhancedStyles = StyleSheet.create({
