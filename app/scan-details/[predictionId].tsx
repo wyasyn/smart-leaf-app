@@ -8,7 +8,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Linking,
+  Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -89,13 +91,19 @@ const ScanDetailsScreen = () => {
       : "#22C55E";
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[
+        styles.container,
+        { paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
           <AntDesign name="arrowleft" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Scan Details</Text>
+        <Text style={styles.headerTitle}>{prediction.disease_info.crop}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -377,9 +385,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: "relative",
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 12,
+    marginBottom: 25,
     overflow: "hidden",
     elevation: 4,
     shadowColor: "#000",

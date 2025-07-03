@@ -131,7 +131,7 @@ export default function DiseaseDetailScreen() {
         style={{
           position: "absolute",
           left: 12,
-          top: 20,
+          top: 40,
           backgroundColor: "#333446BF",
           padding: 12,
           borderRadius: 50,
