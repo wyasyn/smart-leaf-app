@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import {
   Alert,
+  Platform,
   ScrollView,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
@@ -89,7 +91,13 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, padding: 16 }}>
+    <ScrollView
+      style={{
+        flex: 1,
+        padding: 16,
+        paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+      }}
+    >
       <Text
         style={{
           fontSize: 24,
@@ -280,7 +288,7 @@ export default function SettingsScreen() {
       </View>
 
       {/* App Information */}
-      <View style={{ marginBottom: 120 }}>
+      <View style={{ marginBottom: 150 }}>
         <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}>
           About
         </Text>

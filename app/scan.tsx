@@ -25,6 +25,7 @@ import {
   PredictionResponse,
   usePlantDiseaseStore,
 } from "@/store/plantDiseaseStore";
+import { resizeImage } from "@/utils/manipulate";
 import { router } from "expo-router";
 
 export default function PlantScannerScreen() {
@@ -103,12 +104,18 @@ export default function PlantScannerScreen() {
   const takePicture = async () => {
     try {
       const photo = await ref.current?.takePictureAsync({
-        quality: 0.8,
+        quality: 0.7, // Reduced from 0.8
         base64: false,
+        skipProcessing: false, // Process the image for better compression
       });
+
       if (photo?.uri) {
         setValidatingLeaf(true);
-        const res = await validateLeafOnly(photo.uri);
+
+        // Resize the image before validation
+        const resizedUri = await resizeImage(photo.uri, 600, 600);
+
+        const res = await validateLeafOnly(resizedUri);
         if (!res?.is_leaf) {
           Alert.alert(
             "Not a Leaf Image",
@@ -124,10 +131,11 @@ export default function PlantScannerScreen() {
             [{ text: "OK" }]
           );
         } else {
-          setUri(photo.uri);
+          setUri(resizedUri); // Use the resized image
         }
       }
-    } catch {
+    } catch (error) {
+      console.error("Error taking picture:", error);
       Alert.alert("Error", "Failed to take picture. Please try again.");
     } finally {
       setValidatingLeaf(false);
@@ -147,12 +155,16 @@ export default function PlantScannerScreen() {
         mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.7, // Reduced from 0.8
       });
 
       if (!result.canceled && result.assets.length > 0) {
         setValidatingLeaf(true);
-        const res = await validateLeafOnly(result.assets[0].uri);
+
+        // Resize the selected image
+        const resizedUri = await resizeImage(result.assets[0].uri, 600, 600);
+
+        const res = await validateLeafOnly(resizedUri);
 
         if (!res?.is_leaf) {
           Alert.alert(
@@ -169,11 +181,12 @@ export default function PlantScannerScreen() {
             [{ text: "OK" }]
           );
         } else {
-          setUri(result.assets[0].uri);
+          setUri(resizedUri); // Use the resized image
           clearAllErrors();
         }
       }
-    } catch {
+    } catch (error) {
+      console.error("Error opening gallery:", error);
       Alert.alert("Error", "Failed to open gallery.");
     } finally {
       setValidatingLeaf(false);

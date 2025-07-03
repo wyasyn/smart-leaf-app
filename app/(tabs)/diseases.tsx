@@ -1,11 +1,13 @@
 import renderBrowselItem from "@/components/broswe-item";
 import { colors } from "@/utils/colors";
-import { AntDesign, Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
@@ -87,24 +89,14 @@ export default function BrowseScreen() {
             justifyContent: "center",
           }}
         >
-          <TouchableOpacity
-            onPress={() => {
-              router.back();
-            }}
-            style={{
-              position: "absolute",
-              left: 8,
-            }}
-          >
-            <AntDesign name="left" size={24} color="black" />
-          </TouchableOpacity>
           <Text
             style={{
               fontSize: 24,
               fontWeight: "bold",
 
               textAlign: "center",
-              paddingBlock: 24,
+              paddingBottom: 24,
+              paddingTop: 32,
             }}
           >
             Browse Crops
@@ -234,6 +226,9 @@ export default function BrowseScreen() {
 
   return (
     <FlatList
+      style={{
+        paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+      }}
       data={displayDiseases}
       keyExtractor={(item) => item.class_id}
       renderItem={renderBrowselItem}
