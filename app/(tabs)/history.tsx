@@ -2,7 +2,7 @@ import { getRelativeTime } from "@/utils/lib";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +10,6 @@ import {
   FlatList,
   Platform,
   RefreshControl,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -23,6 +22,267 @@ import {
   usePlantDiseaseStore,
 } from "../../store/plantDiseaseStore";
 
+// Constants
+const COLORS = {
+  PRIMARY: "#E50046",
+  SUCCESS: "#22C55E",
+  WARNING: "#F59E0B",
+  DANGER: "#EF4444",
+  GRAY_50: "#F9FAFB",
+  GRAY_100: "#D1D5DB",
+  GRAY_400: "#6B7280",
+  GRAY_700: "#374151",
+  GRAY_900: "#111827",
+  WHITE: "#FFFFFF",
+} as const;
+
+const SPACING = {
+  XS: 4,
+  SM: 8,
+  MD: 12,
+  LG: 16,
+  XL: 20,
+  XXL: 24,
+  XXXL: 40,
+} as const;
+
+const FONT_SIZES = {
+  XS: 12,
+  SM: 14,
+  MD: 16,
+  LG: 18,
+  XL: 20,
+  XXL: 24,
+} as const;
+
+const CHART_CONFIG = {
+  backgroundGradientFrom: COLORS.WHITE,
+  backgroundGradientTo: COLORS.WHITE,
+  color: (opacity = 1) => `rgba(229, 0, 70, ${opacity})`,
+  labelColor: () => COLORS.GRAY_400,
+  barPercentage: 0.7,
+  decimalPlaces: 0,
+} as const;
+
+const IMAGE_HEIGHT = 200;
+const CHART_HEIGHT = 180;
+const MIN_TOUCH_TARGET = 44;
+
+// Separate component for prediction item
+const PredictionItem = React.memo(({ item }: { item: CachedPrediction }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  const isHealthy = item.disease_info.is_healthy;
+  const confidenceColor =
+    item.confidence >= 0.8
+      ? COLORS.SUCCESS
+      : item.confidence >= 0.6
+      ? COLORS.WARNING
+      : COLORS.DANGER;
+
+  const riskColor =
+    item.disease_info.risk_level === "High"
+      ? COLORS.DANGER
+      : item.disease_info.risk_level === "Medium"
+      ? COLORS.WARNING
+      : COLORS.SUCCESS;
+
+  const handlePress = useCallback(() => {
+    router.push({
+      pathname: "/scan-details/[predictionId]",
+      params: {
+        predictionId: item.timestamp.toString(),
+        imageUri: item.imageUri,
+      },
+    });
+  }, [item.timestamp, item.imageUri]);
+
+  const handleImageLoad = useCallback(() => {
+    setImageLoading(false);
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+    setImageLoading(false);
+  }, []);
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      style={styles.predictionItem}
+      activeOpacity={0.7}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={`Prediction for ${
+        item.disease_info.crop || "unknown crop"
+      }, ${
+        isHealthy
+          ? "healthy plant"
+          : item.disease_info.disease_name || item.clean_class_name
+      }, confidence ${Math.round(item.confidence * 100)}%`}
+      accessibilityHint="Tap to view detailed prediction results"
+    >
+      <View style={styles.imageContainer}>
+        {imageLoading && (
+          <View style={styles.imageLoadingContainer}>
+            <ActivityIndicator size="small" color={COLORS.PRIMARY} />
+          </View>
+        )}
+        <Image
+          source={
+            imageError || !item.imageUri
+              ? require("../../assets/images/placeholder-image.png")
+              : { uri: item.imageUri }
+          }
+          style={[styles.predictionImage, imageLoading && styles.hiddenImage]}
+          contentFit="cover"
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          accessible={true}
+          accessibilityLabel={`Plant scan image for ${
+            item.disease_info.crop || "unknown crop"
+          }`}
+        />
+        <View
+          style={[styles.confidenceBadge, { backgroundColor: confidenceColor }]}
+          accessible={true}
+          accessibilityLabel={`Confidence ${Math.round(
+            item.confidence * 100
+          )} percent`}
+        >
+          <Text style={styles.confidenceText}>
+            {Math.round(item.confidence * 100)}%
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.predictionDetails}>
+        <View style={styles.headerRow}>
+          <Text style={styles.cropName} numberOfLines={1}>
+            {item.disease_info.crop || "Unknown Crop"}
+          </Text>
+          <Text style={styles.timestamp}>
+            {getRelativeTime(item.timestamp)}
+          </Text>
+        </View>
+
+        <Text
+          style={[
+            styles.diseaseName,
+            { color: isHealthy ? COLORS.SUCCESS : COLORS.GRAY_700 },
+          ]}
+          numberOfLines={2}
+        >
+          {isHealthy
+            ? "Healthy Plant ✅"
+            : item.disease_info.disease_name || item.clean_class_name}
+        </Text>
+
+        {!isHealthy && (
+          <View style={styles.riskContainer}>
+            <MaterialIcons
+              name="warning"
+              size={16}
+              color={riskColor}
+              accessible={false}
+            />
+            <Text style={[styles.riskLevel, { color: riskColor }]}>
+              {item.disease_info.risk_level} Risk
+            </Text>
+          </View>
+        )}
+
+        <Text style={styles.confidenceLevel}>
+          Confidence: {item.confidence_level}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+PredictionItem.displayName = "PredictionItem";
+
+// Separate component for statistics
+const StatisticsSection = React.memo(
+  ({
+    totalScans,
+    scansToday,
+    healthyScans,
+  }: {
+    totalScans: number;
+    scansToday: number;
+    healthyScans: number;
+  }) => (
+    <View style={styles.statsContainer}>
+      <View
+        style={styles.statItem}
+        accessible={true}
+        accessibilityLabel={`Total scans: ${totalScans}`}
+      >
+        <Text style={styles.statNumber}>{totalScans}</Text>
+        <Text style={styles.statLabel}>Total Scans</Text>
+      </View>
+      <View
+        style={styles.statItem}
+        accessible={true}
+        accessibilityLabel={`Scans today: ${scansToday}`}
+      >
+        <Text style={styles.statNumber}>{scansToday}</Text>
+        <Text style={styles.statLabel}>Today</Text>
+      </View>
+      <View
+        style={styles.statItem}
+        accessible={true}
+        accessibilityLabel={`Healthy plants: ${healthyScans}`}
+      >
+        <Text style={styles.statNumber}>{healthyScans}</Text>
+        <Text style={styles.statLabel}>Healthy</Text>
+      </View>
+    </View>
+  )
+);
+
+StatisticsSection.displayName = "StatisticsSection";
+
+// Separate component for chart
+const WeeklyChart = React.memo(({ chartData }: { chartData: any }) => (
+  <View style={styles.chartContainer}>
+    <Text style={styles.chartTitle}>Weekly Activity</Text>
+    <BarChart
+      data={chartData}
+      width={Dimensions.get("window").width - SPACING.XXXL}
+      height={CHART_HEIGHT}
+      chartConfig={CHART_CONFIG}
+      style={styles.chart}
+      yAxisLabel=""
+      yAxisSuffix=""
+      showValuesOnTopOfBars
+    />
+  </View>
+));
+
+WeeklyChart.displayName = "WeeklyChart";
+
+// Empty state component
+const EmptyState = React.memo(() => (
+  <View style={styles.emptyContainer}>
+    <MaterialIcons
+      name="history"
+      size={64}
+      color={COLORS.GRAY_100}
+      accessible={false}
+    />
+    <Text style={styles.emptyTitle}>No Predictions Yet</Text>
+    <Text style={styles.emptySubtitle}>
+      Start scanning plants to build your prediction history
+    </Text>
+  </View>
+));
+
+EmptyState.displayName = "EmptyState";
+
+// Main component
 const HistoryScreen = () => {
   const predictionHistory = usePlantDiseaseStore(
     (state) => state.predictionHistory
@@ -34,20 +294,26 @@ const HistoryScreen = () => {
     (state) => state.clearPredictionHistory
   );
   const isLoading = usePlantDiseaseStore((state) => state.isLoading);
+  const error = usePlantDiseaseStore((state) => state.error);
+
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     getCachedPredictions();
   }, [getCachedPredictions]);
 
-  const [refreshing, setRefreshing] = useState(false);
-
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await getCachedPredictions(); // wait for the refresh
-    setRefreshing(false);
-  };
+    try {
+      await getCachedPredictions();
+    } catch (err) {
+      console.error("Failed to refresh predictions:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [getCachedPredictions]);
 
-  const getWeekdayLabels = () => {
+  const getWeekdayLabels = useCallback(() => {
     const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const today = new Date();
     const labels = [];
@@ -59,9 +325,9 @@ const HistoryScreen = () => {
     }
 
     return labels;
-  };
+  }, []);
 
-  const handleDeleteAll = () => {
+  const handleDeleteAll = useCallback(() => {
     Alert.alert(
       "Clear All History",
       "This will delete all prediction history. This cannot be undone. Continue?",
@@ -79,9 +345,9 @@ const HistoryScreen = () => {
         },
       ]
     );
-  };
+  }, [clearPredictionHistory]);
 
-  const getWeeklyStats = () => {
+  const getWeeklyStats = useCallback(() => {
     const weeklyData = Array(7).fill(0);
     const now = new Date();
 
@@ -93,132 +359,79 @@ const HistoryScreen = () => {
       if (diff < 7) weeklyData[6 - diff]++;
     }
     return weeklyData;
-  };
+  }, [predictionHistory]);
 
-  const today = new Date().toDateString();
+  const stats = React.useMemo(() => {
+    const today = new Date().toDateString();
+    const scansToday = predictionHistory.filter(
+      (h) => new Date(h.timestamp).toDateString() === today
+    ).length;
+    const healthyScans = predictionHistory.filter(
+      (p: CachedPrediction) => p.disease_info.is_healthy
+    ).length;
 
-  const scansToday: number = predictionHistory.filter(
-    (h) => new Date(h.timestamp).toDateString() === today
-  ).length;
+    return {
+      totalScans: predictionHistory.length,
+      scansToday,
+      healthyScans,
+    };
+  }, [predictionHistory]);
 
-  const renderItem = ({ item }: { item: CachedPrediction }) => {
-    const isHealthy = item.disease_info.is_healthy;
-    const confidenceColor =
-      item.confidence >= 0.8
-        ? "#22C55E"
-        : item.confidence >= 0.6
-        ? "#F59E0B"
-        : "#EF4444";
+  const chartData = React.useMemo(
+    () => ({
+      labels: getWeekdayLabels(),
+      datasets: [
+        {
+          data: getWeeklyStats(),
+        },
+      ],
+    }),
+    [getWeekdayLabels, getWeeklyStats]
+  );
 
-    return (
-      <TouchableOpacity
-        onPress={() =>
-          router.push({
-            pathname: "/scan-details/[predictionId]",
-            params: {
-              predictionId: item.timestamp.toString(),
-              imageUri: item.imageUri,
-            },
-          })
-        }
-        style={styles.predictionItem}
-      >
-        <View style={styles.imageContainer}>
-          <Image
-            source={
-              item.imageUri
-                ? { uri: item.imageUri }
-                : require("../../assets/images/placeholder-image.png")
-            }
-            style={styles.predictionImage}
-            contentFit="cover"
-          />
-          <View
-            style={[
-              styles.confidenceBadge,
-              { backgroundColor: confidenceColor },
-            ]}
-          >
-            <Text style={styles.confidenceText}>
-              {Math.round(item.confidence * 100)}%
-            </Text>
-          </View>
-        </View>
+  const renderItem = useCallback(
+    ({ item }: { item: CachedPrediction }) => <PredictionItem item={item} />,
+    []
+  );
 
-        <View style={styles.predictionDetails}>
-          <View style={styles.headerRow}>
-            <Text style={styles.cropName}>
-              {item.disease_info.crop || "Unknown Crop"}
-            </Text>
-            <Text style={styles.timestamp}>
-              {getRelativeTime(item.timestamp)}
-            </Text>
-          </View>
+  const keyExtractor = useCallback(
+    (item: CachedPrediction) => item.timestamp.toString(),
+    []
+  );
 
-          <Text
-            style={[
-              styles.diseaseName,
-              { color: isHealthy ? "#22C55E" : "#374151" },
-            ]}
-          >
-            {isHealthy
-              ? "Healthy Plant ✅"
-              : item.disease_info.disease_name || item.clean_class_name}
-          </Text>
-
-          {!isHealthy && (
-            <View style={styles.riskContainer}>
-              <MaterialIcons
-                name="warning"
-                size={16}
-                color={
-                  item.disease_info.risk_level === "High"
-                    ? "#EF4444"
-                    : item.disease_info.risk_level === "Medium"
-                    ? "#F59E0B"
-                    : "#22C55E"
-                }
-              />
-              <Text
-                style={[
-                  styles.riskLevel,
-                  {
-                    color:
-                      item.disease_info.risk_level === "High"
-                        ? "#EF4444"
-                        : item.disease_info.risk_level === "Medium"
-                        ? "#F59E0B"
-                        : "#22C55E",
-                  },
-                ]}
-              >
-                {item.disease_info.risk_level} Risk
-              </Text>
-            </View>
-          )}
-
-          <Text style={styles.confidenceLevel}>
-            Confidence: {item.confidence_level}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const chartData = {
-    labels: getWeekdayLabels(),
-    datasets: [
-      {
-        data: getWeeklyStats(),
-      },
-    ],
-  };
+  const getItemLayout = useCallback(
+    (data: any, index: number) => ({
+      length: IMAGE_HEIGHT + 120, // Approximate item height
+      offset: (IMAGE_HEIGHT + 120) * index,
+      index,
+    }),
+    []
+  );
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#E50046" />
+        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
         <Text style={styles.loadingText}>Loading predictions...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <MaterialIcons name="error" size={64} color={COLORS.DANGER} />
+        <Text style={styles.errorTitle}>Something went wrong</Text>
+        <Text style={styles.errorSubtitle}>{error}</Text>
+        <TouchableOpacity
+          onPress={handleRefresh}
+          style={styles.retryButton}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading predictions"
+        >
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -236,84 +449,50 @@ const HistoryScreen = () => {
           <TouchableOpacity
             onPress={handleDeleteAll}
             style={styles.clearButton}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Clear all prediction history"
+            accessibilityHint="This will delete all your scan history permanently"
           >
-            <Feather name="trash-2" size={22} color="#EF4444" />
+            <Feather name="trash-2" size={22} color={COLORS.DANGER} />
           </TouchableOpacity>
         )}
       </View>
 
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      >
-        {predictionHistory.length > 0 ? (
-          <>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>
-                  {predictionHistory.length}
-                </Text>
-                <Text style={styles.statLabel}>Total Scans</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{scansToday}</Text>
-                <Text style={styles.statLabel}>Today</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>
-                  {
-                    predictionHistory.filter(
-                      (p: CachedPrediction) => p.disease_info.is_healthy
-                    ).length
-                  }
-                </Text>
-                <Text style={styles.statLabel}>Healthy</Text>
-              </View>
-            </View>
-
-            <View style={styles.chartContainer}>
-              <Text style={styles.chartTitle}>Weekly Activity</Text>
-              <BarChart
-                data={chartData}
-                width={Dimensions.get("window").width - 40}
-                height={180}
-                chartConfig={{
-                  backgroundGradientFrom: "#fff",
-                  backgroundGradientTo: "#fff",
-                  color: (opacity = 1) => `rgba(229, 0, 70, ${opacity})`,
-                  labelColor: () => "#6B7280",
-                  barPercentage: 0.7,
-                  decimalPlaces: 0,
-                }}
-                style={styles.chart}
-                yAxisLabel=""
-                yAxisSuffix=""
-                showValuesOnTopOfBars
+      {predictionHistory.length > 0 ? (
+        <FlatList
+          data={predictionHistory}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          getItemLayout={getItemLayout}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          initialNumToRender={5}
+          windowSize={10}
+          contentContainerStyle={styles.flatListContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[COLORS.PRIMARY]}
+              tintColor={COLORS.PRIMARY}
+            />
+          }
+          ListHeaderComponent={
+            <>
+              <StatisticsSection
+                totalScans={stats.totalScans}
+                scansToday={stats.scansToday}
+                healthyScans={stats.healthyScans}
               />
-            </View>
-
-            <View style={styles.listContainer}>
-              <FlatList
-                data={predictionHistory}
-                keyExtractor={(item) => item.timestamp.toString()}
-                renderItem={renderItem}
-                scrollEnabled={false}
-              />
-            </View>
-          </>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <MaterialIcons name="history" size={64} color="#D1D5DB" />
-            <Text style={styles.emptyTitle}>No Predictions Yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Start scanning plants to build your prediction history
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+              <WeeklyChart chartData={chartData} />
+            </>
+          }
+        />
+      ) : (
+        <EmptyState />
+      )}
     </View>
   );
 };
@@ -321,83 +500,122 @@ const HistoryScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: COLORS.GRAY_50,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F9FAFB",
+    backgroundColor: COLORS.GRAY_50,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#6B7280",
+    marginTop: SPACING.MD,
+    fontSize: FONT_SIZES.MD,
+    color: COLORS.GRAY_400,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.GRAY_50,
+    paddingHorizontal: SPACING.XXXL,
+  },
+  errorTitle: {
+    fontSize: FONT_SIZES.XL,
+    fontWeight: "600",
+    color: COLORS.GRAY_700,
+    marginTop: SPACING.LG,
+    marginBottom: SPACING.SM,
+  },
+  errorSubtitle: {
+    fontSize: FONT_SIZES.SM,
+    color: COLORS.GRAY_400,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: SPACING.XXL,
+  },
+  retryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: SPACING.XXL,
+    paddingVertical: SPACING.MD,
+    borderRadius: SPACING.SM,
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: "center",
+  },
+  retryButtonText: {
+    color: COLORS.WHITE,
+    fontSize: FONT_SIZES.MD,
+    fontWeight: "600",
   },
   header: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.XL,
     paddingTop: 26,
-    paddingBottom: 16,
-    gap: 4,
+    paddingBottom: SPACING.LG,
+    gap: SPACING.XS,
   },
   title: {
-    fontSize: 24,
+    fontSize: FONT_SIZES.XXL,
     fontWeight: "bold",
-    color: "#111827",
+    color: COLORS.GRAY_900,
   },
   clearButton: {
-    padding: 8,
+    padding: SPACING.SM,
+    minHeight: MIN_TOUCH_TARGET,
+    minWidth: MIN_TOUCH_TARGET,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  flatListContent: {
+    paddingBottom: 100,
   },
   statsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: SPACING.XL,
+    marginBottom: SPACING.XL,
   },
   statItem: {
     alignItems: "center",
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: "center",
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: FONT_SIZES.XXL,
     fontWeight: "bold",
-    color: "#E50046",
+    color: COLORS.PRIMARY,
   },
   statLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 4,
+    fontSize: FONT_SIZES.XS,
+    color: COLORS.GRAY_400,
+    marginTop: SPACING.XS,
   },
   chartContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: SPACING.XL,
+    marginBottom: SPACING.XL,
   },
   chartTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.MD,
     fontWeight: "600",
-    color: "#374151",
-    marginBottom: 12,
+    color: COLORS.GRAY_700,
+    marginBottom: SPACING.MD,
   },
   chart: {
-    borderRadius: 12,
-    backgroundColor: "#fff",
+    borderRadius: SPACING.MD,
+    backgroundColor: COLORS.WHITE,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  listContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
-    paddingTop: 16,
-  },
   predictionItem: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: SPACING.MD,
+    marginBottom: SPACING.LG,
+    marginHorizontal: SPACING.XL,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -407,77 +625,96 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: "relative",
+    height: IMAGE_HEIGHT,
+  },
+  imageLoadingContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.GRAY_100,
+    zIndex: 1,
   },
   predictionImage: {
     width: "100%",
-    height: 200,
+    height: IMAGE_HEIGHT,
+  },
+  hiddenImage: {
+    opacity: 0,
   },
   confidenceBadge: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    top: SPACING.MD,
+    right: SPACING.MD,
+    paddingHorizontal: SPACING.SM,
+    paddingVertical: SPACING.XS,
     borderRadius: 6,
+    minHeight: 24,
+    justifyContent: "center",
   },
   confidenceText: {
-    color: "#fff",
-    fontSize: 12,
+    color: COLORS.WHITE,
+    fontSize: FONT_SIZES.XS,
     fontWeight: "bold",
   },
   predictionDetails: {
-    padding: 16,
+    padding: SPACING.LG,
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: SPACING.SM,
   },
   cropName: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.LG,
     fontWeight: "600",
-    color: "#111827",
+    color: COLORS.GRAY_900,
+    flex: 1,
+    marginRight: SPACING.SM,
   },
   timestamp: {
-    fontSize: 12,
-    color: "#6B7280",
+    fontSize: FONT_SIZES.XS,
+    color: COLORS.GRAY_400,
   },
   diseaseName: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.MD,
     fontWeight: "500",
-    marginBottom: 8,
+    marginBottom: SPACING.SM,
   },
   riskContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: SPACING.XS,
   },
   riskLevel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.SM,
     fontWeight: "500",
-    marginLeft: 4,
+    marginLeft: SPACING.XS,
   },
   confidenceLevel: {
-    fontSize: 12,
-    color: "#6B7280",
+    fontSize: FONT_SIZES.XS,
+    color: COLORS.GRAY_400,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: SPACING.XXXL,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZES.XL,
     fontWeight: "600",
-    color: "#374151",
-    marginTop: 16,
-    marginBottom: 8,
+    color: COLORS.GRAY_700,
+    marginTop: SPACING.LG,
+    marginBottom: SPACING.SM,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
+    fontSize: FONT_SIZES.SM,
+    color: COLORS.GRAY_400,
     textAlign: "center",
     lineHeight: 20,
   },
