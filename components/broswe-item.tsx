@@ -26,7 +26,9 @@ const renderBrowselItem = ({ item }: { item: SearchResult }) => (
       />
     </View>
     <View style={styles.carouselContent}>
-      <Text style={styles.carouselTitle}>{item.disease_info.disease_name}</Text>
+      <Text style={styles.carouselTitle} numberOfLines={1}>
+        {item.disease_info.disease_name}
+      </Text>
       <Text style={styles.carouselDescription} numberOfLines={2}>
         {item.disease_info.description}
       </Text>

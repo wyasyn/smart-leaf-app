@@ -2,6 +2,10 @@ import { Dimensions, StyleSheet } from "react-native";
 
 const { width } = Dimensions.get("window");
 
+const screenWidth = Dimensions.get("window").width;
+const itemSpacing = 9;
+const itemWidth = screenWidth / 2 - itemSpacing * 1.5;
+
 export const stylesBrowse = StyleSheet.create({
   container: {
     flex: 1,
@@ -167,7 +171,7 @@ export const stylesBrowse = StyleSheet.create({
     paddingRight: 20,
   },
   carouselItem: {
-    width: 167,
+    width: itemWidth,
     marginBottom: 24,
     backgroundColor: "#fff",
     borderRadius: 16,
