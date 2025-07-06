@@ -1,3 +1,4 @@
+import { compressImage } from "@/utils/manipulate";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import {
@@ -248,8 +249,8 @@ export const usePlantDiseaseStore = create<PlantDiseaseStore>()(
         diseaseCache: {},
 
         // Cache settings
-        cacheExpiryMinutes: 10080,
-        maxCacheSize: 100,
+        cacheExpiryMinutes: 1440,
+        maxCacheSize: 15,
 
         // Network status
         isOnline: true,
@@ -285,21 +286,30 @@ export const usePlantDiseaseStore = create<PlantDiseaseStore>()(
 
             const data: PredictionResponse = await response.json();
 
+            const compressedImageUri = await compressImage(imageUri);
+
             // Cache the prediction
             const cachedPrediction: CachedPrediction = {
               ...data,
               timestamp: Date.now(),
-              imageUri,
+              imageUri: compressedImageUri,
             };
 
-            set((state) => ({
-              lastPrediction: data,
-              predictionHistory: [
-                cachedPrediction,
-                ...state.predictionHistory.slice(0, state.maxCacheSize - 1),
-              ],
-              isPredicting: false,
-            }));
+            set((state) => {
+              const newHistory = [cachedPrediction, ...state.predictionHistory];
+
+              // Limit cache size - keep only recent items
+              const limitedHistory = newHistory.slice(
+                0,
+                Math.min(state.maxCacheSize, 20)
+              );
+
+              return {
+                lastPrediction: data,
+                predictionHistory: limitedHistory,
+                isPredicting: false,
+              };
+            });
 
             return data;
           } catch (error) {

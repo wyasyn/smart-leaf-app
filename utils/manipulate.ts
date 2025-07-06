@@ -1,4 +1,5 @@
 import { SaveFormat, manipulateAsync } from "expo-image-manipulator";
+const THUMBNAIL_SIZE = 150;
 
 export const resizeImage = async (
   uri: string,
@@ -25,5 +26,19 @@ export const resizeImage = async (
   } catch (error) {
     console.error("Error resizing image:", error);
     return uri; // Return original URI if resize fails
+  }
+};
+
+export const compressImage = async (uri: string): Promise<string> => {
+  try {
+    const result = await manipulateAsync(
+      uri,
+      [{ resize: { width: THUMBNAIL_SIZE } }],
+      { compress: 0.7, format: SaveFormat.JPEG }
+    );
+    return result.uri;
+  } catch (error) {
+    console.warn("Image compression failed:", error);
+    return uri;
   }
 };
