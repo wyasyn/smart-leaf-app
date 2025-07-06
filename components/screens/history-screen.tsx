@@ -5,6 +5,7 @@ import WeeklyChart from "@/components/weekly-chart";
 import { COLORS, IMAGE_HEIGHT } from "@/constants/constants";
 import { historyStyles as styles } from "@/constants/historyStyles";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { isToday } from "date-fns";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -48,9 +49,11 @@ const HistoryScreen = () => {
 
   const loadMore = useCallback(() => {
     if (displayedItems < predictionHistory.length) {
-      setDisplayedItems((prev) =>
-        Math.min(prev + ITEMS_PER_PAGE, predictionHistory.length)
-      );
+      setTimeout(() => {
+        setDisplayedItems((prev) =>
+          Math.min(prev + ITEMS_PER_PAGE, predictionHistory.length)
+        );
+      }, 300); // small delay
     }
   }, [displayedItems, predictionHistory.length]);
 
@@ -77,7 +80,7 @@ const HistoryScreen = () => {
 
   useEffect(() => {
     getCachedPredictions();
-  }, [getCachedPredictions]);
+  }, []);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -139,9 +142,8 @@ const HistoryScreen = () => {
   }, [predictionHistory]);
 
   const stats = React.useMemo(() => {
-    const today = new Date().toDateString();
-    const scansToday = predictionHistory.filter(
-      (h) => new Date(h.timestamp).toDateString() === today
+    const scansToday = predictionHistory.filter((h) =>
+      isToday(new Date(h.timestamp))
     ).length;
     const healthyScans = predictionHistory.filter(
       (p: CachedPrediction) => p.disease_info.is_healthy
@@ -218,14 +220,14 @@ const HistoryScreen = () => {
 
       {predictionHistory.length > 0 ? (
         <FlatList
-          data={visibleHistory} // Use visibleHistory instead of predictionHistory
+          data={visibleHistory}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           getItemLayout={getItemLayout}
           removeClippedSubviews={true}
-          maxToRenderPerBatch={5} // Reduce batch size
-          initialNumToRender={3} // Reduce initial render
-          windowSize={5} // Reduce window size
+          maxToRenderPerBatch={5}
+          initialNumToRender={3}
+          windowSize={5}
           updateCellsBatchingPeriod={100}
           onEndReached={loadMore}
           onEndReachedThreshold={0.1}
