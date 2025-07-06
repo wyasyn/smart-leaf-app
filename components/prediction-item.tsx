@@ -74,7 +74,7 @@ const PredictionItem = React.memo(
           <Image
             source={
               imageError || !displayImageUri
-                ? require("../../assets/images/placeholder-image.png")
+                ? require("../assets/images/placeholder-image.png")
                 : { uri: displayImageUri }
             }
             style={[styles.predictionImage, imageLoading && styles.hiddenImage]}

@@ -53,10 +53,11 @@ const styles = StyleSheet.create({
     color: colors.title,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
     textAlign: "center",
     marginTop: 6,
+    maxWidth: 250,
   },
 });
 
