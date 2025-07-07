@@ -2,21 +2,27 @@ import { CHART_CONFIG, CHART_HEIGHT, SPACING } from "@/constants/constants";
 import { historyStyles as styles } from "@/constants/historyStyles";
 import React from "react";
 import { Dimensions, Text, View } from "react-native";
-import { BarChart } from "react-native-chart-kit";
+import { VictoryBar, VictoryChart, VictoryTheme } from "victory-native";
 
 const WeeklyChart = React.memo(({ chartData }: { chartData: any }) => (
   <View style={styles.chartContainer}>
     <Text style={styles.chartTitle}>Weekly Activity</Text>
-    <BarChart
-      data={chartData}
+    <VictoryChart
+      theme={VictoryTheme.material}
       width={Dimensions.get("window").width - SPACING.XXXL}
       height={CHART_HEIGHT}
-      chartConfig={CHART_CONFIG}
-      style={styles.chart}
-      yAxisLabel=""
-      yAxisSuffix=""
-      showValuesOnTopOfBars
-    />
+      padding={{ left: 60, top: 20, right: 20, bottom: 60 }}
+    >
+      <VictoryBar
+        data={chartData?.datasets?.[0]?.data?.map((value: number, index: number) => ({
+          x: chartData.labels[index],
+          y: value
+        })) || []}
+        style={{
+          data: { fill: CHART_CONFIG.color() }
+        }}
+      />
+    </VictoryChart>
   </View>
 ));
 
