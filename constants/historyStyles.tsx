@@ -1,5 +1,6 @@
 import { StyleSheet } from "react-native";
 import {
+  CHART_CONFIG,
   COLORS,
   FONT_SIZES,
   IMAGE_HEIGHT,
@@ -81,27 +82,13 @@ export const historyStyles = StyleSheet.create({
   flatListContent: {
     paddingBottom: 100,
   },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingHorizontal: SPACING.XL,
-    marginBottom: SPACING.XL,
-  },
-  statItem: {
-    alignItems: "center",
-    minHeight: MIN_TOUCH_TARGET,
-    justifyContent: "center",
-  },
+
   statNumber: {
     fontSize: FONT_SIZES.XXL,
     fontWeight: "bold",
     color: COLORS.PRIMARY,
   },
-  statLabel: {
-    fontSize: FONT_SIZES.XS,
-    color: COLORS.GRAY_400,
-    marginTop: SPACING.XS,
-  },
+
   chartContainer: {
     paddingHorizontal: SPACING.XL,
     marginBottom: SPACING.XL,
@@ -236,5 +223,28 @@ export const historyStyles = StyleSheet.create({
     marginTop: SPACING.SM,
     fontSize: FONT_SIZES.SM,
     color: COLORS.GRAY_400,
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    flex: 1,
+    paddingHorizontal: SPACING.MD,
+    marginBottom: 24,
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: CHART_CONFIG.color(),
+    marginBottom: SPACING.XS,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
   },
 });

@@ -12,6 +12,8 @@ if (!API_URL) {
   throw new Error("API_URL is not defined. Please set EXPO_PUBLIC_API_URL.");
 }
 
+const STORE_VERSION = 1;
+
 // Types based on your API
 
 export interface LeafValidationResponse {
@@ -685,6 +687,7 @@ export const usePlantDiseaseStore = create<PlantDiseaseStore>()(
       }),
       {
         name: "plant-disease-store",
+        version: STORE_VERSION,
         storage: createJSONStorage(() => AsyncStorage),
         partialize: (state) => ({
           baseUrl: state.baseUrl,
@@ -695,6 +698,18 @@ export const usePlantDiseaseStore = create<PlantDiseaseStore>()(
           maxCacheSize: state.maxCacheSize,
           lastLeafValidation: state.lastLeafValidation,
         }),
+        migrate: (persistedState: any, version: number) => {
+          // Migration logic for different versions
+          if (version === 0) {
+            // Update from version 0 to version 1
+            return {
+              ...persistedState,
+              cacheExpiryMinutes: 1440,
+              maxCacheSize: 15,
+            };
+          }
+          return persistedState;
+        },
       }
     )
   )

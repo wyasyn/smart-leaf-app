@@ -1,7 +1,6 @@
 import EmptyState from "@/components/history-empty";
 import PredictionItem from "@/components/prediction-item";
 import StatisticsSection from "@/components/stats";
-import WeeklyChart from "@/components/weekly-chart";
 import { COLORS, IMAGE_HEIGHT } from "@/constants/constants";
 import { historyStyles as styles } from "@/constants/historyStyles";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
@@ -93,20 +92,6 @@ const HistoryScreen = () => {
     }
   }, [getCachedPredictions]);
 
-  const getWeekdayLabels = useCallback(() => {
-    const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const today = new Date();
-    const labels = [];
-
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(today.getDate() - i);
-      labels.push(weekdays[d.getDay()]);
-    }
-
-    return labels;
-  }, []);
-
   const handleDeleteAll = useCallback(() => {
     Alert.alert(
       "Clear All History",
@@ -127,20 +112,6 @@ const HistoryScreen = () => {
     );
   }, [clearPredictionHistory]);
 
-  const getWeeklyStats = useCallback(() => {
-    const weeklyData = Array(7).fill(0);
-    const now = new Date();
-
-    for (const prediction of predictionHistory) {
-      const predictionDate = new Date(prediction.timestamp);
-      const diff = Math.floor(
-        (now.getTime() - predictionDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      if (diff < 7) weeklyData[6 - diff]++;
-    }
-    return weeklyData;
-  }, [predictionHistory]);
-
   const stats = React.useMemo(() => {
     const scansToday = predictionHistory.filter((h) =>
       isToday(new Date(h.timestamp))
@@ -155,18 +126,6 @@ const HistoryScreen = () => {
       healthyScans,
     };
   }, [predictionHistory]);
-
-  const chartData = React.useMemo(
-    () => ({
-      labels: getWeekdayLabels(),
-      datasets: [
-        {
-          data: getWeeklyStats(),
-        },
-      ],
-    }),
-    [getWeekdayLabels, getWeeklyStats]
-  );
 
   if (isLoading) {
     return (
@@ -248,7 +207,6 @@ const HistoryScreen = () => {
                 scansToday={stats.scansToday}
                 healthyScans={stats.healthyScans}
               />
-              <WeeklyChart chartData={chartData} />
             </>
           }
           ListFooterComponent={
